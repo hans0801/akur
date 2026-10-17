@@ -42,6 +42,20 @@ class AdministrativeUnit extends Model
     }
 
     /**
+     * Nama tampilan lengkap: RT disertai RW induknya ("RT 005 / RW 006") agar jelas di laporan, notifikasi,
+     * dan judul layar; RW cukup namanya sendiri.
+     */
+    public function label(): string
+    {
+        if ($this->unit_type !== self::TYPE_RT || $this->parent_unit_id === null) {
+            return $this->name;
+        }
+        $parent = $this->relationLoaded('parent') ? $this->parent : $this->parent()->first(['id', 'name']);
+
+        return $parent ? "{$this->name} / {$parent->name}" : $this->name;
+    }
+
+    /**
      * ID unit ini beserta semua leluhurnya (RT → RW). Hierarki hanya dua tingkat.
      *
      * @return list<string>

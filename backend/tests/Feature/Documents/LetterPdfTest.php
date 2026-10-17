@@ -152,7 +152,7 @@ class LetterPdfTest extends TestCase
         // Satu tampilan per RT (berisi Ketua RT dan Ketua RW); RW yang sudah punya RT tidak tampil terpisah.
         $this->assertSame([$rt1->id, $rt2->id], $units->pluck('id')->all());
         $this->assertTrue($units->every(fn ($u) => $u['can_edit']));
-        $this->assertSame("{$rt1->name} / RW 06", $units->first()['label']);
+        $this->assertSame("{$rt1->name} / {$rw->name}", $units->first()['label']);
 
         // Ketua RW membuka RT di bawahnya untuk mengisi bagian RW dan kop.
         $ketuaRw = $this->bearerFor($this->userWithRole($rw, Role::KETUA_RW));

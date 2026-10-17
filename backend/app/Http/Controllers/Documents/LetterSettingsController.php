@@ -46,7 +46,7 @@ class LetterSettingsController extends Controller
 
         $units = AdministrativeUnit::query()
             ->whereIn('id', $ids)
-            ->with('parent:id,code')
+            ->with('parent:id,name,code')
             ->withCount('children')
             ->get()
             ->filter(fn (AdministrativeUnit $u) => $u->unit_type === AdministrativeUnit::TYPE_RT || $u->children_count === 0)
@@ -58,7 +58,7 @@ class LetterSettingsController extends Controller
                 'code' => $u->code,
                 'name' => $u->name,
                 'parent_unit_id' => $u->parent_unit_id,
-                'label' => $u->unit_type === AdministrativeUnit::TYPE_RT && $u->parent ? "{$u->name} / RW {$u->parent->code}" : $u->name,
+                'label' => $u->label(),
                 'can_edit' => $this->canEditAny($user, $u),
             ]);
 
@@ -224,14 +224,14 @@ class LetterSettingsController extends Controller
         $rwSettings = $rt === null ? $own : $parent;
 
         $signer = fn (?AdministrativeUnit $u, ?UnitLetterSetting $s) => $u === null ? null : [
-            'unit' => ['id' => $u->id, 'name' => $u->name, 'unit_type' => $u->unit_type, 'code' => $u->code],
+            'unit' => ['id' => $u->id, 'name' => $u->label(), 'unit_type' => $u->unit_type, 'code' => $u->code],
             'signer_name' => $s?->signer_name,
             'signature_file_id' => $s?->signature_file_id,
             'can_edit' => $this->canEditOwn($user, $u),
         ];
 
         return [
-            'unit' => ['id' => $unit->id, 'name' => $unit->name, 'unit_type' => $unit->unit_type, 'code' => $unit->code],
+            'unit' => ['id' => $unit->id, 'name' => $unit->label(), 'unit_type' => $unit->unit_type, 'code' => $unit->code],
             'kop' => [
                 ...collect(self::KOP_FIELDS)->mapWithKeys(fn ($f) => [$f => $own?->{$f} ?: $parent?->{$f}])->all(),
                 'logo_file_id' => $own?->logo_file_id ?? $parent?->logo_file_id,

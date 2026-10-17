@@ -251,7 +251,7 @@ class PaymentController extends FinanceController
             ->distinct()
             ->pluck('user_id');
         foreach ($userIds as $userId) {
-            $this->notifier->send($userId, $type, $title, "{$body} · {$unit->name}", ['payment_id' => $paymentId]);
+            $this->notifier->send($userId, $type, $title, "{$body} · {$unit->label()}", ['payment_id' => $paymentId]);
         }
     }
 

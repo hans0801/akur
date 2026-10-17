@@ -27,7 +27,7 @@ class AnnouncementController extends CommunityController
         $page = Announcement::query()
             ->live()
             ->whereIn('unit_id', $unitIds)
-            ->with(['unit:id,name,unit_type', 'author:id,display_name'])
+            ->with(['unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name', 'author:id,display_name'])
             ->orderByRaw('coalesce(publish_at, created_at) DESC')
             ->paginate(20);
 
@@ -42,7 +42,7 @@ class AnnouncementController extends CommunityController
         $page = Announcement::query()
             ->whereIn('unit_id', $unit->selfAndDescendantIds())
             ->when(in_array($request->query('status'), Announcement::STATUSES, true), fn ($q) => $q->where('status', $request->query('status')))
-            ->with(['unit:id,name,unit_type', 'author:id,display_name'])
+            ->with(['unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name', 'author:id,display_name'])
             ->latest('updated_at')
             ->paginate(20);
 
@@ -138,7 +138,7 @@ class AnnouncementController extends CommunityController
     private function notifyIfLive(Request $request, Announcement $announcement, AdministrativeUnit $unit): void
     {
         if ($announcement->isLive()) {
-            $this->notifyMembers($unit, $request->user(), 'announcement.published', "Pengumuman {$unit->name}", $announcement->title, [
+            $this->notifyMembers($unit, $request->user(), 'announcement.published', "Pengumuman {$unit->label()}", $announcement->title, [
                 'announcement_id' => $announcement->id,
             ]);
         }

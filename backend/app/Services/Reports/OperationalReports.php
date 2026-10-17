@@ -36,7 +36,7 @@ class OperationalReports
             'payments' => $this->payments($unitIds, $start, $end),
             'documents' => $this->documents($unitIds, $start, $end),
             'activities' => $this->activities($unitIds, $start, $end),
-        } + ['unit' => ['id' => $unit->id, 'name' => $unit->name], 'month' => $start->format('Y-m')];
+        } + ['unit' => ['id' => $unit->id, 'name' => $unit->label()], 'month' => $start->format('Y-m')];
     }
 
     /** @return array{label: string, type: string, value: int} */

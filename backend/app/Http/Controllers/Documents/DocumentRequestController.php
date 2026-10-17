@@ -52,7 +52,7 @@ class DocumentRequestController extends Controller
     {
         $page = DocumentRequest::query()
             ->where('requester_user_id', $request->user()->id)
-            ->with(['documentType:id,code,name', 'resident:id,full_name', 'unit:id,name'])
+            ->with(['documentType:id,code,name', 'resident:id,full_name', 'unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name'])
             ->latest('submitted_at')
             ->paginate(20);
         $page->getCollection()->transform(fn (DocumentRequest $d) => $this->present($request, $d));
@@ -73,7 +73,7 @@ class DocumentRequestController extends Controller
                 fn ($q) => $q->whereIn('status', [DocumentRequest::SUBMITTED, DocumentRequest::UNDER_REVIEW, DocumentRequest::APPROVED]),
                 fn ($q) => $q->when($status !== 'all', fn ($q) => $q->where('status', $status)),
             )
-            ->with(['documentType:id,code,name', 'resident:id,full_name', 'unit:id,name'])
+            ->with(['documentType:id,code,name', 'resident:id,full_name', 'unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name'])
             ->orderBy('submitted_at')
             ->paginate(20);
         $page->getCollection()->transform(fn (DocumentRequest $d) => $this->present($request, $d));
@@ -85,7 +85,7 @@ class DocumentRequestController extends Controller
     {
         $this->authorizeView($request, $documentRequest);
 
-        return response()->json(['data' => $this->present($request, $documentRequest->load(['documentType', 'resident:id,full_name', 'unit:id,name', 'processor:id,display_name']), true)]);
+        return response()->json(['data' => $this->present($request, $documentRequest->load(['documentType', 'resident:id,full_name', 'unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name', 'processor:id,display_name']), true)]);
     }
 
     public function store(Request $request): JsonResponse
@@ -126,7 +126,7 @@ class DocumentRequestController extends Controller
             return $documentRequest;
         });
 
-        return response()->json(['data' => $this->present($request, $documentRequest->load(['documentType', 'resident:id,full_name', 'unit:id,name']), true)], 201);
+        return response()->json(['data' => $this->present($request, $documentRequest->load(['documentType', 'resident:id,full_name', 'unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name']), true)], 201);
     }
 
     /** Pemohon memperbaiki pengajuan yang diminta revisi; status kembali ke `submitted`. */
@@ -300,7 +300,7 @@ class DocumentRequestController extends Controller
 
         foreach ($userIds as $userId) {
             if ($userId !== $actor->id) {
-                $this->notifier->send($userId, $type, $title, "{$body} · {$unit->name}", ['document_request_id' => $documentRequest->id]);
+                $this->notifier->send($userId, $type, $title, "{$body} · {$unit->label()}", ['document_request_id' => $documentRequest->id]);
             }
         }
     }
@@ -313,7 +313,7 @@ class DocumentRequestController extends Controller
             'status' => $d->status,
             'document_type' => ['id' => $d->documentType->id, 'code' => $d->documentType->code, 'name' => $d->documentType->name],
             'resident_name' => $d->resident?->full_name,
-            'unit' => ['id' => $d->unit_id, 'name' => $d->unit?->name],
+            'unit' => ['id' => $d->unit_id, 'name' => $d->unit?->label()],
             'purpose' => $d->purpose,
             'letter_number' => $d->letter_number,
             'submitted_at' => $d->submitted_at?->toIso8601String(),

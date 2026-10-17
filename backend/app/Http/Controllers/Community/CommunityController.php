@@ -58,6 +58,6 @@ abstract class CommunityController extends Controller
     /** @return array{id: string, name: string, unit_type: string} */
     protected static function unitSummary(AdministrativeUnit $unit): array
     {
-        return ['id' => $unit->id, 'name' => $unit->name, 'unit_type' => $unit->unit_type];
+        return ['id' => $unit->id, 'name' => $unit->label(), 'unit_type' => $unit->unit_type];
     }
 }

@@ -31,7 +31,7 @@ class CurrentUserResource extends JsonResource
                     'id' => $m->unit->id,
                     'unit_type' => $m->unit->unit_type,
                     'code' => $m->unit->code,
-                    'name' => $m->unit->name,
+                    'name' => $m->unit->label(),
                     'parent_unit_id' => $m->unit->parent_unit_id,
                 ],
                 'expires_at' => $m->expires_at?->toIso8601String(),

@@ -76,6 +76,8 @@ class CashbookTest extends TestCase
             ->assertJsonPath('data.total_income', 300000)
             ->assertJsonPath('data.total_expense', 50000)
             ->assertJsonPath('data.closing_balance', 350000)
+            // Nama unit lengkap dengan RW induk, mis. "RT 005 / RW 006".
+            ->assertJsonPath('data.unit.name', "{$rt->name} / {$rt->parent->name}")
             ->json('data');
         $this->assertArrayNotHasKey('transactions', $report);
 

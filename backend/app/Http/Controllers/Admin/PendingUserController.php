@@ -84,7 +84,7 @@ class PendingUserController extends Controller
             ]);
         });
 
-        $notifier->send($user->id, 'account.verified', 'Akun terverifikasi', "Akun Anda telah diverifikasi sebagai warga {$unit->name}.", ['unit_id' => $unit->id]);
+        $notifier->send($user->id, 'account.verified', 'Akun terverifikasi', "Akun Anda telah diverifikasi sebagai warga {$unit->label()}.", ['unit_id' => $unit->id]);
 
         return response()->json(['message' => 'Akun berhasil ditautkan ke data warga.']);
     }

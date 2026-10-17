@@ -53,7 +53,7 @@ class ReportExportController extends FinanceController
             $table = $operational->build($report, $unit, $start);
 
             return $request->query('format') === 'csv'
-                ? $this->tableCsv($table, "{$report}-".str($unit->name)->slug().'-'.$start->format('Y-m').'.csv')
+                ? $this->tableCsv($table, "{$report}-".str($unit->label())->slug().'-'.$start->format('Y-m').'.csv')
                 : $this->tableHtml($table, self::MONTHS[$start->month - 1].' '.$start->year);
         }
 
@@ -114,7 +114,7 @@ class ReportExportController extends FinanceController
             ->orderBy('occurred_at')
             ->get();
 
-        $filename = 'kas-'.str($unit->name)->slug().'-'.$start->format('Y-m').'.csv';
+        $filename = 'kas-'.str($unit->label())->slug().'-'.$start->format('Y-m').'.csv';
 
         return response()->streamDownload(function () use ($transactions, $tz) {
             $out = fopen('php://output', 'w');

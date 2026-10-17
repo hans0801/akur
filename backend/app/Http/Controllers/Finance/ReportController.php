@@ -56,7 +56,7 @@ class ReportController extends FinanceController
         $opening = $ledger->balance([$unit->id], $start->utc());
 
         return [
-            'unit' => ['id' => $unit->id, 'name' => $unit->name],
+            'unit' => ['id' => $unit->id, 'name' => $unit->label()],
             'month' => $start->format('Y-m'),
             'opening_balance' => $opening,
             'income' => $income->all(),
@@ -108,7 +108,7 @@ class ReportController extends FinanceController
             $months[] = ['month' => $from->format('Y-m'), 'income' => (int) $flows->income, 'expense' => (int) $flows->expense, 'closing_balance' => $balance];
         }
 
-        return response()->json(['data' => ['unit' => ['id' => $unit->id, 'name' => $unit->name], 'year' => $year, 'months' => $months]]);
+        return response()->json(['data' => ['unit' => ['id' => $unit->id, 'name' => $unit->label()], 'year' => $year, 'months' => $months]]);
     }
 
     /** @return list<array<string, mixed>> */

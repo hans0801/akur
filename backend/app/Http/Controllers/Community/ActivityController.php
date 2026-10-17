@@ -33,7 +33,7 @@ class ActivityController extends CommunityController
                 fn ($q) => $q->whereRaw('coalesce(ends_at, starts_at) < now()')->orderByDesc('starts_at'),
                 fn ($q) => $q->whereRaw('coalesce(ends_at, starts_at) >= now()')->orderBy('starts_at'),
             )
-            ->with(['unit:id,name,unit_type,parent_unit_id', 'organizer:id,display_name'])
+            ->with(['unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name', 'organizer:id,display_name'])
             ->withCount(['participants as going_count' => fn ($q) => $q->where('participation_status', 'going')])
             ->paginate(20);
 
@@ -89,7 +89,7 @@ class ActivityController extends CommunityController
                 'category' => $activity->category,
                 'starts_at' => $activity->starts_at->toIso8601String(),
             ]);
-            $this->notifyMembers($unit, $request->user(), 'activity.created', "Kegiatan {$unit->name}", $activity->title, [
+            $this->notifyMembers($unit, $request->user(), 'activity.created', "Kegiatan {$unit->label()}", $activity->title, [
                 'activity_id' => $activity->id,
             ]);
 
@@ -131,11 +131,11 @@ class ActivityController extends CommunityController
             $this->audit->log('activity.updated', 'activity', $activity->id, $unit->id, ['changes' => $changes, 'reason' => $data['reason'] ?? null]);
 
             if ($activity->status === Activity::STATUS_CANCELLED) {
-                $this->notifyMembers($unit, $request->user(), 'activity.cancelled', "Kegiatan dibatalkan · {$unit->name}", $activity->title, [
+                $this->notifyMembers($unit, $request->user(), 'activity.cancelled', "Kegiatan dibatalkan · {$unit->label()}", $activity->title, [
                     'activity_id' => $activity->id,
                 ]);
             } elseif (isset($changes['starts_at']) || isset($changes['location_text'])) {
-                $this->notifyMembers($unit, $request->user(), 'activity.rescheduled', "Kegiatan berubah · {$unit->name}", $activity->title, [
+                $this->notifyMembers($unit, $request->user(), 'activity.rescheduled', "Kegiatan berubah · {$unit->label()}", $activity->title, [
                     'activity_id' => $activity->id,
                 ]);
             }

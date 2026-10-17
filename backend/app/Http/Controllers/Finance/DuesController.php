@@ -25,7 +25,7 @@ class DuesController extends FinanceController
 
         $types = DuesType::query()
             ->whereIn('unit_id', $unit->selfAndAncestorIds())
-            ->with('unit:id,name')
+            ->with(['unit:id,name,unit_type,parent_unit_id', 'unit.parent:id,name'])
             ->withCount('periods')
             ->orderByDesc('is_active')->orderBy('name')
             ->get();
@@ -154,7 +154,7 @@ class DuesController extends FinanceController
         $status = $request->query('status');
 
         $assessments = $duesPeriod->assessments()
-            ->with(['household:id,unit_id,address_text,household_number,head_resident_id', 'household.head:id,full_name', 'household.unit:id,name'])
+            ->with(['household:id,unit_id,address_text,household_number,head_resident_id', 'household.head:id,full_name', 'household.unit:id,name,unit_type,parent_unit_id', 'household.unit.parent:id,name'])
             ->when(in_array($status, [DuesAssessment::UNPAID, DuesAssessment::PARTIAL, DuesAssessment::PAID, DuesAssessment::WAIVED], true), fn ($q) => $q->where('status', $status))
             ->get()
             ->sortBy(fn (DuesAssessment $a) => $a->household->address_text)
@@ -174,7 +174,7 @@ class DuesController extends FinanceController
                     'address_text' => $a->household->address_text,
                     'household_number' => $a->household->household_number,
                     'head_name' => $a->household->head?->full_name,
-                    'unit_name' => $a->household->unit?->name,
+                    'unit_name' => $a->household->unit?->label(),
                 ],
             ]),
         ]]);

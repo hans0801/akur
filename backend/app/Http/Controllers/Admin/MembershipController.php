@@ -88,7 +88,7 @@ class MembershipController extends Controller
         });
 
         $roleName = Role::query()->where('code', $data['role'])->value('name');
-        $notifier->send($target->id, 'membership.granted', 'Peran baru', "Anda ditetapkan sebagai {$roleName} di {$unit->name}.", ['unit_id' => $unit->id]);
+        $notifier->send($target->id, 'membership.granted', 'Peran baru', "Anda ditetapkan sebagai {$roleName} di {$unit->label()}.", ['unit_id' => $unit->id]);
 
         return response()->json(['data' => ['id' => $membership->id]], 201);
     }
