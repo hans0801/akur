@@ -38,6 +38,27 @@ class GoogleLoginTest extends TestCase
         $this->assertTrue(AuditLog::query()->where('action', 'auth.account_created')->exists());
     }
 
+    public function test_ios_login_returns_bearer_token_without_cookie(): void
+    {
+        $response = $this->postJson('/api/v1/auth/google', [
+            'id_token' => $this->googleIdToken(),
+            'platform' => 'ios',
+            'device_label' => 'iOS',
+        ])->assertOk();
+
+        $this->assertIsString($response->json('token'));
+        $response->assertCookieMissing(config('akur.session.cookie'));
+        $this->assertSame('ios', UserSession::query()->sole()->platform);
+
+        $this->getJson('/api/v1/me', ['Authorization' => 'Bearer '.$response->json('token')])->assertOk();
+    }
+
+    public function test_unknown_platform_is_rejected(): void
+    {
+        $this->postJson('/api/v1/auth/google', ['id_token' => $this->googleIdToken(), 'platform' => 'windows'])
+            ->assertJsonValidationErrors('platform');
+    }
+
     public function test_session_token_is_stored_hashed_not_raw(): void
     {
         $token = $this->postJson('/api/v1/auth/google', ['id_token' => $this->googleIdToken(), 'platform' => 'android'])->json('token');

@@ -12,9 +12,16 @@ class AppConfig {
 
   static String get apiBaseUrl {
     if (_apiBaseUrl.isNotEmpty) return _apiBaseUrl;
-    // Emulator Android mengakses host lewat 10.0.2.2.
-    return kIsWeb ? '' : 'http://10.0.2.2:8000';
+    if (kIsWeb) return '';
+    // Emulator Android mengakses host lewat 10.0.2.2; Simulator iOS memakai localhost milik Mac.
+    // Perangkat fisik selalu butuh --dart-define=API_BASE_URL.
+    return isIos ? 'http://localhost:8000' : 'http://10.0.2.2:8000';
   }
 
-  static String get platform => kIsWeb ? 'web' : 'android';
+  static bool get isIos => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// Nilai `platform` untuk POST /auth/google: web → cookie; android/ios → token Bearer.
+  static String get platform => kIsWeb ? 'web' : (isIos ? 'ios' : 'android');
+
+  static String get deviceLabel => kIsWeb ? 'Browser' : (isIos ? 'iOS' : 'Android');
 }

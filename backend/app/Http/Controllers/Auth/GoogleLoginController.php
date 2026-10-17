@@ -31,7 +31,7 @@ class GoogleLoginController extends Controller
     ): JsonResponse {
         $data = $request->validate([
             'id_token' => ['required', 'string', 'max:4096'],
-            'platform' => ['required', 'in:web,android'],
+            'platform' => ['required', 'in:web,android,ios'],
             'device_label' => ['nullable', 'string', 'max:120'],
         ]);
 
@@ -103,8 +103,8 @@ class GoogleLoginController extends Controller
             'session' => ['id' => $session->id, 'expires_at' => $session->expires_at->toIso8601String()],
         ];
 
-        if ($data['platform'] === 'android') {
-            // Android menyimpan token ini di secure storage platform.
+        if ($data['platform'] !== 'web') {
+            // Android/iOS menyimpan token ini di secure storage platform (Keystore/Keychain).
             $body['token'] = $token;
 
             return response()->json($body);

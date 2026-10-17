@@ -1,11 +1,11 @@
 # AKUR — Aplikasi Kerukunan Warga
 
-Administrasi RT/RW untuk Android dan Web. Lihat PRD v0.1 untuk ruang lingkup.
+Administrasi RT/RW untuk Android, iOS, dan Web. Lihat PRD v0.1 untuk ruang lingkup.
 
 | Folder | Isi |
 |---|---|
 | `backend/` | Laravel 13 API (PHP 8.3) + PostgreSQL 17 |
-| `app/` | Flutter (Android + Web), tema terracotta |
+| `app/` | Flutter (Android + iOS + Web), tema terracotta |
 | `infra/` | Caddy (edge/TLS), init Postgres dev |
 | `compose.yaml` | Stack produksi/pilot VPS (Caddy + API + Postgres) |
 | `compose.dev.yaml` | Postgres lokal untuk pengembangan |
@@ -56,6 +56,20 @@ cd app && flutter run -d chrome --web-port 5173 --dart-define=API_BASE_URL=http:
 
 Untuk web lokal, tambahkan `http://localhost:5173` ke `AKUR_WEB_ORIGINS` di `backend/.env`
 dan ke *Authorized JavaScript origins* di Google Cloud Console, serta set `AKUR_SESSION_COOKIE_SECURE=false`.
+
+### iOS
+
+Build iOS butuh macOS + Xcode (tidak bisa dari Windows). Bundle ID: `id.my.akur.akur`.
+
+1. Google Cloud Console → buat OAuth client tipe **iOS** dengan bundle ID di atas.
+2. Isi `GOOGLE_IOS_CLIENT_ID` dan `GOOGLE_REVERSED_CLIENT_ID` di `app/ios/Flutter/GoogleSignIn.xcconfig`.
+   `GOOGLE_CLIENT_IDS` di backend tetap Web client ID (ID token iOS ber-aud Web client ID).
+3. Di Mac: `cd app && flutter pub get && cd ios && pod install`, buka `Runner.xcworkspace`, pilih Team untuk signing.
+4. Jalankan (Simulator memakai `http://localhost:8000`; perangkat fisik wajib `API_BASE_URL` HTTPS):
+
+```bash
+cd app && flutter run -d ios --dart-define=GOOGLE_WEB_CLIENT_ID=<web-client-id>
+```
 
 Test backend (memakai database `akur_test` di container dev):
 

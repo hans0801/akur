@@ -1,0 +1,7 @@
+// Google Sign-In untuk iOS. Client ID OAuth bersifat publik (bukan rahasia).
+// Buat "iOS client" di Google Cloud Console dengan bundle ID id.my.akur.akur, lalu isi:
+//   GOOGLE_IOS_CLIENT_ID      = <angka>-<acak>.apps.googleusercontent.com
+//   GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.<angka>-<acak>
+// ID token tetap ber-aud Web client ID (serverClientId di Dart), jadi backend tidak perlu diubah.
+GOOGLE_IOS_CLIENT_ID = 559004098140-1e6kqklk2bmu8r9lh28rlrqc1g4i4cmf.apps.googleusercontent.com
+GOOGLE_REVERSED_CLIENT_ID = com.googleusercontent.apps.559004098140-1e6kqklk2bmu8r9lh28rlrqc1g4i4cmf

@@ -26,6 +26,8 @@ class AuthController extends ChangeNotifier {
     if (AppConfig.googleWebClientId.isEmpty) {
       error = 'GOOGLE_WEB_CLIENT_ID belum diatur (--dart-define).';
     } else {
+      // iOS membaca client ID-nya sendiri dari Info.plist (GIDClientID); Android/iOS meminta ID token
+      // ber-aud Web client ID lewat serverClientId agar backend cukup memverifikasi satu aud.
       await GoogleSignIn.instance.initialize(
         clientId: kIsWeb ? AppConfig.googleWebClientId : null,
         serverClientId: kIsWeb ? null : AppConfig.googleWebClientId,
@@ -38,7 +40,7 @@ class AuthController extends ChangeNotifier {
     await refreshMe();
   }
 
-  /// Android: memunculkan pemilih akun. Web memakai tombol GIS (lihat google_button_web.dart).
+  /// Android/iOS: memunculkan pemilih akun. Web memakai tombol GIS (lihat google_button_web.dart).
   Future<void> signInWithGoogle() async {
     error = null;
     try {
@@ -59,7 +61,7 @@ class AuthController extends ChangeNotifier {
       final json = await api.post('/auth/google', {
         'id_token': idToken,
         'platform': AppConfig.platform,
-        'device_label': kIsWeb ? 'Browser' : 'Android',
+        'device_label': AppConfig.deviceLabel,
       });
       final token = json['token'] as String?;
       if (token != null) await api.saveToken(token);
