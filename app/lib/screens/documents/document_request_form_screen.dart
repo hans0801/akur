@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../population/population_common.dart';
+import 'documents_common.dart';
 
 /// Ajukan surat baru, atau perbaiki pengajuan yang diminta revisi (`request` diisi).
 /// Isian tambahan mengikuti `required_fields` jenis surat dari server.
@@ -39,7 +40,7 @@ class _DocumentRequestFormScreenState extends State<DocumentRequestFormScreen> {
   @override
   void initState() {
     super.initState();
-    final existing = (widget.request?['form_data'] as Map<String, dynamic>?) ?? const {};
+    final existing = formDataOf(widget.request);
     for (final e in existing.entries) {
       _dateValues[e.key] = e.value?.toString();
     }

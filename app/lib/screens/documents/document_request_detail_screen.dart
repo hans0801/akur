@@ -117,7 +117,7 @@ class _DocumentRequestDetailScreenState extends State<DocumentRequestDetailScree
                         dense: true,
                         contentPadding: EdgeInsets.zero,
                         title: Text(f['label'] as String),
-                        trailing: Text('${(d['form_data'] as Map<String, dynamic>)[f['key']] ?? '-'}'),
+                        trailing: Text('${formDataOf(d)[f['key']] ?? '-'}'),
                       ),
                     if (d['admin_notes'] != null)
                       Card(

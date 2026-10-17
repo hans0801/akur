@@ -311,7 +311,8 @@ class DocumentRequestController extends Controller
         if ($detail) {
             $data += [
                 'resident_id' => $d->resident_id,
-                'form_data' => $d->form_data ?? [],
+                // Selalu objek JSON ({}), juga saat kosong: array PHP kosong akan dikirim sebagai [] (list).
+                'form_data' => (object) ($d->form_data ?? []),
                 'fields' => $d->documentType->fields(),
                 'admin_notes' => $d->admin_notes,
                 'processed_by' => $d->processor?->display_name,

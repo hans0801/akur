@@ -1,5 +1,6 @@
 import 'package:akur/api/api_client.dart';
 import 'package:akur/screens/community/community_common.dart';
+import 'package:akur/screens/documents/documents_common.dart';
 import 'package:akur/screens/finance/finance_common.dart';
 import 'package:akur/widgets/async_view.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +14,13 @@ void main() {
       expect(formatRupiah(1250000), 'Rp 1.250.000');
       expect(formatRupiah(-150000), '-Rp 150.000');
     });
+  });
+
+  test('formDataOf menerima objek, array kosong dari PHP, dan null', () {
+    expect(formDataOf({'form_data': {'nama_usaha': 'Warung'}}), {'nama_usaha': 'Warung'});
+    expect(formDataOf({'form_data': <dynamic>[]}), isEmpty);
+    expect(formDataOf({'form_data': null}), isEmpty);
+    expect(formDataOf(null), isEmpty);
   });
 
   test('formatDateTime menampilkan waktu lokal dan "-" untuk null', () {

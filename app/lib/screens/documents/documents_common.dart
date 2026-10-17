@@ -52,3 +52,9 @@ Future<void> openLetter(BuildContext context, ApiClient api, String requestId) a
     messenger.showSnackBar(SnackBar(content: Text(e.message)));
   }
 }
+
+/// Isian surat dari API sebagai map. Toleran terhadap `[]` (array kosong dari PHP) atau null.
+Map<String, dynamic> formDataOf(Map<String, dynamic>? request) {
+  final raw = request?['form_data'];
+  return raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
+}

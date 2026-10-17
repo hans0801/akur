@@ -183,6 +183,22 @@ class DocumentRequestTest extends TestCase
         $this->get(URL::temporarySignedRoute('documents.letter', now()->subMinute(), ['documentRequest' => $id]))->assertForbidden();
     }
 
+    public function test_form_data_is_always_a_json_object(): void
+    {
+        ['rt1' => $rt] = $this->unitTree();
+        [$warga, $resident] = $this->linkedWarga($rt);
+        $id = $this->submit($warga, $resident, 'pengantar_umum');
+
+        // Jenis surat tanpa isian tambahan: harus {} (bukan []) agar aplikasi bisa membacanya sebagai map.
+        $response = $this->getJson("/api/v1/document-requests/{$id}", $this->bearerFor($warga))->assertOk();
+        $this->assertStringContainsString('"form_data":{}', $response->getContent());
+
+        $this->postJson("/api/v1/document-requests/{$id}/transition", ['status' => 'revision_requested', 'notes' => 'Perjelas keperluan'], $this->bearerFor($this->userWithRole($rt, Role::KETUA_RT)))
+            ->assertOk()
+            ->assertJsonPath('data.status', 'revision_requested');
+        $this->assertStringContainsString('"form_data":{}', $this->getJson("/api/v1/document-requests/{$id}", $this->bearerFor($warga))->getContent());
+    }
+
     public function test_requester_cancels_only_while_open(): void
     {
         ['rt1' => $rt] = $this->unitTree();
