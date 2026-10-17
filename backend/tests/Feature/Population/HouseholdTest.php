@@ -73,6 +73,16 @@ class HouseholdTest extends TestCase
             ->assertJsonValidationErrors('street_id');
     }
 
+    public function test_household_must_be_registered_in_an_rt(): void
+    {
+        ['rw' => $rw] = $this->unitTree();
+        $headers = $this->bearerFor($this->userWithRole($rw, Role::SUPER_ADMIN));
+
+        $this->postJson("/api/v1/units/{$rw->id}/households", ['address_text' => 'X'], $headers)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('unit');
+    }
+
     public function test_ketua_rw_reads_rts_below_but_cannot_write(): void
     {
         ['rw' => $rw, 'rt2' => $rt2] = $this->unitTree();

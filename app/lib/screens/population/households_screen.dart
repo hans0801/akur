@@ -29,9 +29,11 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
   void _reload() => setState(() => _households = _load());
 
   Future<void> _create() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => HouseholdFormScreen(scope: widget.scope)),
-    );
+    if (widget.scope.unit.unitType != 'rt') {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('KK harus didaftarkan di RT. Pilih RT terlebih dahulu.')));
+      return;
+    }
+    final created = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => HouseholdFormScreen(scope: widget.scope)));
     if (created == true) _reload();
   }
 
@@ -58,9 +60,7 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
                 const SizedBox(width: 8),
                 DropdownButton<String>(
                   value: _status,
-                  items: [
-                    for (final e in householdStatusLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value)),
-                  ],
+                  items: [for (final e in householdStatusLabels.entries) DropdownMenuItem(value: e.key, child: Text(e.value))],
                   onChanged: (v) {
                     if (v == null) return;
                     _status = v;
@@ -97,9 +97,11 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
                                 isThreeLine: true,
                                 trailing: Text('${h['members_count'] ?? 0} jiwa'),
                                 onTap: () async {
-                                  await Navigator.of(context).push(MaterialPageRoute(
-                                    builder: (_) => HouseholdDetailScreen(scope: widget.scope, householdId: h['id'] as String),
-                                  ));
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => HouseholdDetailScreen(scope: widget.scope, householdId: h['id'] as String),
+                                    ),
+                                  );
                                   _reload();
                                 },
                               ),
@@ -137,14 +139,18 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
 
   Future<void> _edit(Map<String, dynamic> household) async {
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => HouseholdFormScreen(scope: widget.scope, household: household)),
+      MaterialPageRoute(
+        builder: (_) => HouseholdFormScreen(scope: widget.scope, household: household),
+      ),
     );
     if (saved == true) _reload();
   }
 
   Future<void> _addMember() async {
     final saved = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => ResidentFormScreen(scope: widget.scope, householdId: widget.householdId)),
+      MaterialPageRoute(
+        builder: (_) => ResidentFormScreen(scope: widget.scope, householdId: widget.householdId),
+      ),
     );
     if (saved == true) _reload();
   }
@@ -184,67 +190,77 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
             _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => RefreshIndicator(
-                onRefresh: () async => _reload(),
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    Text(h!['address_text'] as String, style: theme.textTheme.titleLarge),
-                    const SizedBox(height: 8),
-                    Wrap(spacing: 8, runSpacing: 8, children: [
+              onRefresh: () async => _reload(),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  Text(h!['address_text'] as String, style: theme.textTheme.titleLarge),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
                       Chip(label: Text(householdStatusLabels[h['status']] ?? h['status'] as String)),
                       if (h['street_name'] != null) Chip(label: Text(h['street_name'] as String)),
                       if (h['house_number'] != null) Chip(label: Text('No. ${h['house_number']}')),
                       if (h['household_number'] != null) Chip(label: Text('Nomor: ${h['household_number']}')),
-                    ]),
-                    const SizedBox(height: 8),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.badge_outlined),
+                      title: Text(h['kk_masked'] as String? ?? 'Belum diisi'),
+                      subtitle: const Text('No. KK (tersamar)'),
+                      trailing: h['has_kk'] == true && widget.scope.canWrite
+                          ? TextButton(
+                              onPressed: () => revealSensitive(
+                                context,
+                                widget.scope.api,
+                                path: '/households/${widget.householdId}/kk/reveal',
+                                field: 'kk_number',
+                                label: 'No. KK',
+                              ),
+                              child: const Text('Tampilkan'),
+                            )
+                          : null,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text('Anggota', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  for (final r in (h['members'] as List<dynamic>).cast<Map<String, dynamic>>())
                     Card(
                       child: ListTile(
-                        leading: const Icon(Icons.badge_outlined),
-                        title: Text(h['kk_masked'] as String? ?? 'Belum diisi'),
-                        subtitle: const Text('No. KK (tersamar)'),
-                        trailing: h['has_kk'] == true && widget.scope.canWrite
-                            ? TextButton(
-                                onPressed: () => revealSensitive(context, widget.scope.api,
-                                    path: '/households/${widget.householdId}/kk/reveal', field: 'kk_number', label: 'No. KK'),
-                                child: const Text('Tampilkan'),
+                        leading: Icon(r['is_household_head'] == true ? Icons.star : Icons.person_outline),
+                        title: Text(r['full_name'] as String),
+                        subtitle: Text(
+                          '${residencyStatusLabels[r['residency_status']] ?? r['residency_status']}'
+                          '${r['nik_masked'] != null ? ' · NIK ${r['nik_masked']}' : ''}',
+                        ),
+                        trailing:
+                            widget.scope.canWrite &&
+                                r['is_household_head'] != true &&
+                                r['is_alive'] == true &&
+                                r['residency_status'] != 'moved_out'
+                            ? PopupMenuButton<String>(
+                                onSelected: (_) => _setHead(r),
+                                itemBuilder: (_) => const [PopupMenuItem(value: 'head', child: Text('Jadikan kepala keluarga'))],
                               )
                             : null,
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => ResidentDetailScreen(scope: widget.scope, residentId: r['id'] as String),
+                            ),
+                          );
+                          _reload();
+                        },
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text('Anggota', style: theme.textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    for (final r in (h['members'] as List<dynamic>).cast<Map<String, dynamic>>())
-                      Card(
-                        child: ListTile(
-                          leading: Icon(r['is_household_head'] == true ? Icons.star : Icons.person_outline),
-                          title: Text(r['full_name'] as String),
-                          subtitle: Text(
-                            '${residencyStatusLabels[r['residency_status']] ?? r['residency_status']}'
-                            '${r['nik_masked'] != null ? ' · NIK ${r['nik_masked']}' : ''}',
-                          ),
-                          trailing: widget.scope.canWrite &&
-                                  r['is_household_head'] != true &&
-                                  r['is_alive'] == true &&
-                                  r['residency_status'] != 'moved_out'
-                              ? PopupMenuButton<String>(
-                                  onSelected: (_) => _setHead(r),
-                                  itemBuilder: (_) => const [
-                                    PopupMenuItem(value: 'head', child: Text('Jadikan kepala keluarga')),
-                                  ],
-                                )
-                              : null,
-                          onTap: () async {
-                            await Navigator.of(context).push(MaterialPageRoute(
-                              builder: (_) => ResidentDetailScreen(scope: widget.scope, residentId: r['id'] as String),
-                            ));
-                            _reload();
-                          },
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
+            ),
           },
         );
       },

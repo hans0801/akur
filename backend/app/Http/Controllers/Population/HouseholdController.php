@@ -58,6 +58,10 @@ class HouseholdController extends PopulationController
     public function store(Request $request, AdministrativeUnit $unit): JsonResponse
     {
         $this->authorizeWrite($request, $unit);
+        // Surat pengantar selalu terbit atas nama RT keluarga, jadi KK tidak boleh langsung di RW.
+        if ($unit->unit_type !== AdministrativeUnit::TYPE_RT) {
+            throw ValidationException::withMessages(['unit' => 'KK harus didaftarkan di RT. Pilih RT terlebih dahulu.']);
+        }
         $data = $request->validate([
             'household_number' => ['nullable', 'string', 'max:40'],
             'kk_number' => ['nullable', 'string', 'regex:/^\d{16}$/'],
