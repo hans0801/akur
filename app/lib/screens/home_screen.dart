@@ -45,11 +45,12 @@ class HomeScreen extends StatelessWidget {
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: [
-                for (final m in user.memberships) Chip(label: Text('${m.roleName} · ${m.unit.name}')),
-              ],
+              children: [for (final m in user.memberships.where((m) => !m.inherited)) Chip(label: Text('${m.roleName} · ${m.unit.name}'))],
             ),
-            if (linking.isNotEmpty || user.populationMemberships.isNotEmpty || user.documentQueueUnits.isNotEmpty || user.financeUnits.isNotEmpty) ...[
+            if (linking.isNotEmpty ||
+                user.populationMemberships.isNotEmpty ||
+                user.documentQueueUnits.isNotEmpty ||
+                user.financeUnits.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text('Pengurus', style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -62,7 +63,9 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Keluarga, warga, mutasi, jalan & rumah'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => PopulationHomeScreen(api: auth.api, user: user)),
+                    MaterialPageRoute(
+                      builder: (_) => PopulationHomeScreen(api: auth.api, user: user),
+                    ),
                   ),
                 ),
               ),
@@ -74,7 +77,9 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Tunggakan, pembayaran, surat, kegiatan'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => OperationalReportsScreen(api: auth.api, user: user)),
+                    MaterialPageRoute(
+                      builder: (_) => OperationalReportsScreen(api: auth.api, user: user),
+                    ),
                   ),
                 ),
               ),
@@ -86,7 +91,9 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Jenis iuran, periode, dan tagihan keluarga'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => DuesAdminScreen(api: auth.api, user: user)),
+                    MaterialPageRoute(
+                      builder: (_) => DuesAdminScreen(api: auth.api, user: user),
+                    ),
                   ),
                 ),
               ),
@@ -97,7 +104,9 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Saldo, pemasukan, dan pengeluaran'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => CashbookScreen(api: auth.api, user: user)),
+                    MaterialPageRoute(
+                      builder: (_) => CashbookScreen(api: auth.api, user: user),
+                    ),
                   ),
                 ),
               ),
@@ -108,7 +117,9 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Pembayaran iuran yang dilaporkan warga'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => PaymentQueueScreen(api: auth.api, user: user)),
+                    MaterialPageRoute(
+                      builder: (_) => PaymentQueueScreen(api: auth.api, user: user),
+                    ),
                   ),
                 ),
               ),
@@ -120,9 +131,7 @@ class HomeScreen extends StatelessWidget {
                   title: const Text('Pengaturan surat'),
                   subtitle: const Text('Nama ketua, kop, tanda tangan + cap'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => LetterSettingsScreen(api: auth.api)),
-                  ),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => LetterSettingsScreen(api: auth.api))),
                 ),
               ),
             if (user.documentQueueUnits.isNotEmpty)
@@ -133,7 +142,9 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Tinjau dan terbitkan surat pengantar'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => DocumentQueueScreen(api: auth.api, units: user.documentQueueUnits)),
+                    MaterialPageRoute(
+                      builder: (_) => DocumentQueueScreen(api: auth.api, units: user.documentQueueUnits),
+                    ),
                   ),
                 ),
               ),
@@ -162,7 +173,9 @@ class HomeScreen extends StatelessWidget {
                 subtitle: const Text('Info terbaru dari RT/RW'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => AnnouncementsScreen(api: auth.api, user: user)),
+                  MaterialPageRoute(
+                    builder: (_) => AnnouncementsScreen(api: auth.api, user: user),
+                  ),
                 ),
               ),
             ),
@@ -173,7 +186,9 @@ class HomeScreen extends StatelessWidget {
                 subtitle: const Text('Agenda warga dan konfirmasi kehadiran'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => ActivitiesScreen(api: auth.api, user: user)),
+                  MaterialPageRoute(
+                    builder: (_) => ActivitiesScreen(api: auth.api, user: user),
+                  ),
                 ),
               ),
             ),
@@ -183,9 +198,7 @@ class HomeScreen extends StatelessWidget {
                 title: const Text('Surat pengantar'),
                 subtitle: const Text('Ajukan dan cetak surat dari RT'),
                 trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => DocumentRequestsScreen(api: auth.api)),
-                ),
+                onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => DocumentRequestsScreen(api: auth.api))),
               ),
             ),
             if (user.residentName != null)
@@ -195,9 +208,7 @@ class HomeScreen extends StatelessWidget {
                   title: const Text('Iuran keluarga'),
                   subtitle: const Text('Tagihan dan lapor pembayaran'),
                   trailing: const Icon(Icons.chevron_right),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => MyDuesScreen(api: auth.api)),
-                  ),
+                  onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => MyDuesScreen(api: auth.api))),
                 ),
               ),
             if (user.memberships.isNotEmpty)
@@ -208,11 +219,13 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Transparansi keuangan RT/RW'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => FinanceReportScreen(
-                      api: auth.api,
-                      units: reportUnits(user),
-                      exportUnitIds: {for (final u in user.financeUnits) u.id},
-                    )),
+                    MaterialPageRoute(
+                      builder: (_) => FinanceReportScreen(
+                        api: auth.api,
+                        units: reportUnits(user),
+                        exportUnitIds: {for (final u in user.financeUnits) u.id},
+                      ),
+                    ),
                   ),
                 ),
               ),

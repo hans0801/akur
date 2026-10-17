@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserSession;
 use App\Services\Auth\SessionManager;
@@ -24,6 +25,21 @@ class SessionTest extends TestCase
         $this->getJson('/api/v1/admin/pending-users', $headers)
             ->assertForbidden()
             ->assertJsonPath('code', 'account_not_active');
+    }
+
+    public function test_me_lists_rts_below_an_rw_membership_first_and_labelled(): void
+    {
+        ['rw' => $rw, 'rt1' => $rt1, 'rt2' => $rt2] = $this->unitTree();
+        $user = $this->userWithRole($rw, Role::SUPER_ADMIN);
+
+        $memberships = collect($this->getJson('/api/v1/me', $this->bearerFor($user))->assertOk()->json('data.memberships'));
+        $this->assertEquals(
+            [$rt1->id => true, $rt2->id => true, $rw->id => false],
+            $memberships->pluck('inherited', 'unit.id')->all(),
+        );
+        // RT didahulukan, RW terakhir.
+        $this->assertSame(['rt', 'rt', 'rw'], $memberships->pluck('unit.unit_type')->all());
+        $this->assertSame("{$rt1->name} / {$rw->name}", $memberships->firstWhere('unit.id', $rt1->id)['unit']['name']);
     }
 
     public function test_logout_revokes_the_session(): void
