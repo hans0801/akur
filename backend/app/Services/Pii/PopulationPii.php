@@ -56,6 +56,24 @@ class PopulationPii
         return $binary === null ? null : $this->cipher->decrypt($binary, $field);
     }
 
+    /** True bila nilai tersimpan belum memakai kunci/format aktif (lihat akur:pii-rotate). */
+    public function needsRotation(mixed $ciphertext): bool
+    {
+        $binary = self::readBinary($ciphertext);
+
+        return $binary !== null && ! $this->cipher->isCurrent($binary);
+    }
+
+    /**
+     * Enkripsi ulang dengan kunci aktif dan hitung ulang HMAC lookup (juga dipakai saat kunci lookup diganti).
+     *
+     * @return array<string, Expression|null>
+     */
+    public function reencrypt(mixed $ciphertext, string $field, string $prefix): array
+    {
+        return $this->columns($this->reveal($ciphertext, $field), $field, $prefix);
+    }
+
     /** Hanya 4 digit terakhir yang terlihat. */
     public function masked(mixed $ciphertext, string $field): ?string
     {

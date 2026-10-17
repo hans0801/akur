@@ -55,8 +55,14 @@ Selesai W10 (penyelesaian UI): seluruh UI dan pesan API berbahasa Indonesia (pem
 `backend/lang/id`, 401/404/429/tautan kedaluwarsa tanpa detail internal), tampilan galat seragam dengan "Coba lagi",
 batas waktu request 20 detik + pesan offline, kembali ke login otomatis bila sesi berakhir, lebar konten dibatasi
 di web/tablet, tooltip untuk tombol ikon (pembaca layar). MVP feature freeze.
-Belum:
-enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
+Selesai W11 (security & backup): desain enkripsi NIK/KK final dengan rotasi kunci
+([docs/security/field-encryption.md](docs/security/field-encryption.md), `php artisan akur:pii-rotate`), redaksi data
+sensitif di semua log (NIK/KK, token, JWT, signature tautan; juga di log akses Caddy), header keamanan + `no-store`
+untuk respons API, `php artisan akur:security-check [--production]`, backup offsite terenkripsi age + rclone dan
+restore drill otomatis ([infra/backup](infra/backup/README.md)), serta
+[checklist keamanan rilis](docs/security/checklist.md).
+
+Belum: QA & migrasi data uji (W12), deploy otomatis.
 
 ## Menjalankan lokal
 

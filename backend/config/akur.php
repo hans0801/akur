@@ -61,7 +61,11 @@ return [
     'letter_link_ttl_minutes' => 5,
 
     // Kunci enkripsi NIK/KK (32 byte acak, base64) dan kunci HMAC lookup yang BERBEDA. Lihat App\Services\Pii.
+    // Rotasi (W11): AKUR_PII_KEYS="1:base64...,2:base64..." + AKUR_PII_ACTIVE_KEY_ID=2, lalu `php artisan akur:pii-rotate`.
+    // AKUR_PII_ENCRYPTION_KEY lama tetap dibaca sebagai kunci id 1. Lihat docs/security/field-encryption.md.
     'pii' => [
+        'keys' => env('AKUR_PII_KEYS'),
+        'active_key_id' => env('AKUR_PII_ACTIVE_KEY_ID'),
         'encryption_key' => env('AKUR_PII_ENCRYPTION_KEY'),
         'lookup_key' => env('AKUR_PII_LOOKUP_KEY'),
     ],

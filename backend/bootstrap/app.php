@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyBrowserRequest;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Auth\AuthenticationException;
@@ -25,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Hanya Caddy (jaringan Docker privat) yang dipercaya sebagai proxy.
         $middleware->trustProxies(at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.1']);
 
-        $middleware->api(prepend: [AssignRequestId::class], append: [VerifyBrowserRequest::class]);
+        $middleware->api(prepend: [AssignRequestId::class, SecurityHeaders::class], append: [VerifyBrowserRequest::class]);
 
         $middleware->alias(['account.active' => EnsureAccountActive::class]);
     })

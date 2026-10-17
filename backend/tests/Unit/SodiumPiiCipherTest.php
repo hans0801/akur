@@ -9,9 +9,9 @@ use PHPUnit\Framework\TestCase;
 
 class SodiumPiiCipherTest extends TestCase
 {
-    private function cipher(): SodiumPiiCipher
+    private function cipher(int $active = 1, ?array $keys = null): SodiumPiiCipher
     {
-        return new SodiumPiiCipher(str_repeat('e', 32), str_repeat('l', 32));
+        return new SodiumPiiCipher($keys ?? [1 => str_repeat('e', 32)], $active, str_repeat('l', 32));
     }
 
     public function test_round_trip_with_random_nonce(): void
@@ -47,7 +47,7 @@ class SodiumPiiCipherTest extends TestCase
     public function test_lookup_hash_is_deterministic_keyed_and_field_scoped(): void
     {
         $cipher = $this->cipher();
-        $other = new SodiumPiiCipher(str_repeat('e', 32), str_repeat('x', 32));
+        $other = new SodiumPiiCipher([1 => str_repeat('e', 32)], 1, str_repeat('x', 32));
 
         $this->assertSame($cipher->lookupHash('3201', 'residents.nik'), $cipher->lookupHash('3201', 'residents.nik'));
         $this->assertNotSame($cipher->lookupHash('3201', 'residents.nik'), $cipher->lookupHash('3201', 'households.kk_number'));
@@ -58,6 +58,45 @@ class SodiumPiiCipherTest extends TestCase
     public function test_encryption_and_lookup_keys_must_differ(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        new SodiumPiiCipher(str_repeat('k', 32), str_repeat('k', 32));
+        new SodiumPiiCipher([1 => str_repeat('k', 32)], 1, str_repeat('k', 32));
+    }
+
+    public function test_rotation_keeps_old_ciphertext_readable_and_marks_it_stale(): void
+    {
+        $keys = [1 => str_repeat('a', 32), 2 => str_repeat('b', 32)];
+        $old = $this->cipher(1, [1 => $keys[1]])->encrypt('3201010101010001', 'residents.nik');
+        $rotated = $this->cipher(2, $keys);
+
+        $this->assertSame('3201010101010001', $rotated->decrypt($old, 'residents.nik'));
+        $this->assertFalse($rotated->isCurrent($old));
+
+        $fresh = $rotated->encrypt('3201010101010001', 'residents.nik');
+        $this->assertTrue($rotated->isCurrent($fresh));
+        $this->assertSame(2, ord($fresh[1]));
+    }
+
+    public function test_legacy_v1_ciphertext_is_read_with_key_one(): void
+    {
+        $key = str_repeat('a', 32);
+        $nonce = random_bytes(SODIUM_CRYPTO_AEAD_XCHACHA20POLY1305_IETF_NPUBBYTES);
+        $legacy = "\x01".$nonce.sodium_crypto_aead_xchacha20poly1305_ietf_encrypt('3201010101010001', 'residents.nik', $nonce, $key);
+
+        $cipher = $this->cipher(2, [1 => $key, 2 => str_repeat('b', 32)]);
+        $this->assertSame('3201010101010001', $cipher->decrypt($legacy, 'residents.nik'));
+        $this->assertFalse($cipher->isCurrent($legacy));
+    }
+
+    public function test_missing_key_for_ciphertext_fails_closed(): void
+    {
+        $ciphertext = $this->cipher(2, [2 => str_repeat('b', 32)])->encrypt('x', 'residents.nik');
+
+        $this->expectException(PiiDecryptionFailed::class);
+        $this->cipher(1, [1 => str_repeat('a', 32)])->decrypt($ciphertext, 'residents.nik');
+    }
+
+    public function test_active_key_must_exist(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->cipher(3, [1 => str_repeat('a', 32)]);
     }
 }

@@ -34,8 +34,15 @@
 		file_server
 	}
 
+	# Log hygiene (W11): signature tautan cetak surat/laporan tidak boleh tersimpan di log akses.
+	# Header Authorization/Cookie sudah disamarkan Caddy secara bawaan.
 	log {
 		output stdout
-		format json
+		format filter {
+			request>uri query {
+				replace signature REDACTED
+			}
+			wrap json
+		}
 	}
 }
