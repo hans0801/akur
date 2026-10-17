@@ -8,6 +8,7 @@ use App\Models\DocumentType;
 use App\Models\FileObject;
 use App\Models\Resident;
 use App\Models\Role;
+use App\Models\UnitLetterSetting;
 use App\Models\User;
 use App\Services\Documents\LetterPdf;
 use Database\Seeders\DocumentTypeSeeder;
@@ -58,11 +59,14 @@ class LetterPdfTest extends TestCase
         $ketuaRw = $this->bearerFor($this->userWithRole($rw, Role::KETUA_RW));
 
         $rtSignature = $this->upload($ketuaRt, 'letter_signature');
-        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['signer_name' => 'Ahmad Ketua RT', 'signature_file_id' => $rtSignature], $ketuaRt)
-            ->assertOk()->assertJsonPath('data.signature_file_id', $rtSignature)->assertJsonPath('data.can_edit', true);
-        $this->putJson("/api/v1/units/{$rw->id}/letter-settings", [
-            'signer_name' => 'Hendra Ketua RW', 'kelurahan' => 'Larangan Indah', 'kecamatan' => 'Larangan', 'city' => 'Kota Tangerang', 'province' => 'Banten',
-        ], $ketuaRw)->assertOk();
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rt' => ['signer_name' => 'Ahmad Ketua RT', 'signature_file_id' => $rtSignature]], $ketuaRt)
+            ->assertOk()->assertJsonPath('data.rt.signature_file_id', $rtSignature)->assertJsonPath('data.rt.can_edit', true)
+            ->assertJsonPath('data.rw.can_edit', false);
+        // Ketua RW mengisi kop dan namanya sendiri dari layar RT yang sama.
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", [
+            'kelurahan' => 'Larangan Indah', 'kecamatan' => 'Larangan', 'city' => 'Kota Tangerang', 'province' => 'Banten',
+            'rw' => ['signer_name' => 'Hendra Ketua RW'],
+        ], $ketuaRw)->assertOk()->assertJsonPath('data.rw.signer_name', 'Hendra Ketua RW')->assertJsonPath('data.kop.city', 'Kota Tangerang');
 
         [$warga, $resident] = $this->linkedWarga($rt);
         $resident->update(['religion' => 'Islam', 'occupation' => 'Guru', 'marital_status' => 'Kawin', 'birth_place' => 'Tangerang', 'birth_date' => '1990-01-01']);
@@ -88,10 +92,18 @@ class LetterPdfTest extends TestCase
         $sekretaris = $this->bearerFor($this->userWithRole($rt, Role::SEKRETARIS));
 
         // Ketua RW tidak boleh mengganti tanda tangan/nama Ketua RT, tetapi boleh melihat.
-        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['signer_name' => 'X'], $ketuaRw)->assertForbidden();
-        $this->getJson("/api/v1/units/{$rt->id}/letter-settings", $ketuaRw)->assertOk()->assertJsonPath('data.can_edit', false);
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rt' => ['signer_name' => 'X']], $ketuaRw)->assertForbidden();
+        $this->getJson("/api/v1/units/{$rt->id}/letter-settings", $ketuaRw)->assertOk()
+            ->assertJsonPath('data.rt.can_edit', false)->assertJsonPath('data.rw.can_edit', true)->assertJsonPath('data.kop.can_edit', true);
 
-        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['signer_name' => 'X'], $sekretaris)->assertForbidden();
+        // Ketua RT tidak boleh mengganti nama/tanda tangan Ketua RW; permintaan campuran ditolak utuh.
+        $ketuaRt = $this->bearerFor($this->userWithRole($rt, Role::KETUA_RT));
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rw' => ['signer_name' => 'X']], $ketuaRt)->assertForbidden();
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rt' => ['signer_name' => 'X'], 'rw' => ['signer_name' => 'Y']], $ketuaRt)->assertForbidden();
+        $this->assertNull(UnitLetterSetting::query()->find($rt->id)?->signer_name);
+
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rt' => ['signer_name' => 'X']], $sekretaris)->assertForbidden();
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['city' => 'X'], $sekretaris)->assertForbidden();
         $this->getJson("/api/v1/units/{$rt->id}/letter-settings", $sekretaris)->assertOk();
 
         foreach ([Role::BENDAHARA, Role::WARGA] as $role) {
@@ -106,13 +118,13 @@ class LetterPdfTest extends TestCase
         ['rt1' => $rt] = $this->unitTree();
         $ketua = $this->bearerFor($this->userWithRole($rt, Role::KETUA_RT));
         $first = $this->upload($ketua, 'letter_signature');
-        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['signature_file_id' => $first], $ketua)->assertOk();
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rt' => ['signature_file_id' => $first]], $ketua)->assertOk();
 
         $this->travel(2)->days();
         $this->artisan('akur:prune-files')->expectsOutputToContain('Dihapus: 0')->assertSuccessful();
 
         $second = $this->upload($ketua, 'letter_signature');
-        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['signature_file_id' => $second], $ketua)->assertOk();
+        $this->putJson("/api/v1/units/{$rt->id}/letter-settings", ['rt' => ['signature_file_id' => $second]], $ketua)->assertOk();
         $this->assertNull(FileObject::withTrashed()->find($first));
         $this->assertNotNull(FileObject::query()->find($second));
 
@@ -137,20 +149,47 @@ class LetterPdfTest extends TestCase
 
         $admin = $this->bearerFor($this->userWithRole($rw, Role::SUPER_ADMIN));
         $units = collect($this->getJson('/api/v1/letter-settings/units', $admin)->assertOk()->json('data'));
-        $this->assertSame([$rt1->id, $rt2->id, $rw->id], $units->pluck('id')->all());
+        // Satu tampilan per RT (berisi Ketua RT dan Ketua RW); RW yang sudah punya RT tidak tampil terpisah.
+        $this->assertSame([$rt1->id, $rt2->id], $units->pluck('id')->all());
         $this->assertTrue($units->every(fn ($u) => $u['can_edit']));
         $this->assertSame("{$rt1->name} / RW 06", $units->first()['label']);
 
-        // Ketua RW melihat RT di bawahnya tetapi hanya boleh mengubah pengaturan RW.
+        // Ketua RW membuka RT di bawahnya untuk mengisi bagian RW dan kop.
         $ketuaRw = $this->bearerFor($this->userWithRole($rw, Role::KETUA_RW));
         $flags = collect($this->getJson('/api/v1/letter-settings/units', $ketuaRw)->json('data'))->pluck('can_edit', 'id');
-        $this->assertSame([$rt1->id => false, $rt2->id => false, $rw->id => true], $flags->all());
+        $this->assertSame([$rt1->id => true, $rt2->id => true], $flags->all());
+
+        $sekretaris = $this->bearerFor($this->userWithRole($rt1, Role::SEKRETARIS));
+        $this->getJson('/api/v1/letter-settings/units', $sekretaris)->assertOk()->assertJsonPath('data.0.can_edit', false);
+
+        // RW tanpa RT tetap bisa diatur sendiri.
+        $lonelyRw = AdministrativeUnit::factory()->create(['code' => '09']);
+        $lonelyKetua = $this->bearerFor($this->userWithRole($lonelyRw, Role::KETUA_RW));
+        $this->getJson('/api/v1/letter-settings/units', $lonelyKetua)->assertJsonPath('data.0.id', $lonelyRw->id);
+        $this->putJson("/api/v1/units/{$lonelyRw->id}/letter-settings", ['city' => 'Kota Tangerang', 'rw' => ['signer_name' => 'Hendra']], $lonelyKetua)
+            ->assertOk()->assertJsonPath('data.rt', null)->assertJsonPath('data.rw.signer_name', 'Hendra')->assertJsonPath('data.kop.city', 'Kota Tangerang');
 
         $ketuaRt = $this->bearerFor($this->userWithRole($rt1, Role::KETUA_RT));
         $this->getJson('/api/v1/letter-settings/units', $ketuaRt)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.can_edit', true);
 
         // Super admin di RW boleh mengisi nama Ketua RT dan tanda tangannya.
-        $this->putJson("/api/v1/units/{$rt1->id}/letter-settings", ['signer_name' => 'Ahmad Ketua RT'], $admin)->assertOk();
+        $this->putJson("/api/v1/units/{$rt1->id}/letter-settings", ['rt' => ['signer_name' => 'Ahmad Ketua RT'], 'rw' => ['signer_name' => 'Hendra']], $admin)->assertOk();
+    }
+
+    public function test_rt_screen_shows_rw_signature_and_region_fallback(): void
+    {
+        ['rw' => $rw, 'rt1' => $rt] = $this->unitTree();
+        $ketuaRw = $this->bearerFor($this->userWithRole($rw, Role::KETUA_RW));
+        $rwSignature = $this->upload($ketuaRw, 'letter_signature');
+        $this->putJson("/api/v1/units/{$rw->id}/letter-settings", ['city' => 'Kota Tangerang', 'rw' => ['signature_file_id' => $rwSignature]], $ketuaRw)->assertOk();
+
+        $ketuaRt = $this->bearerFor($this->userWithRole($rt, Role::KETUA_RT));
+        $this->getJson("/api/v1/units/{$rt->id}/letter-settings", $ketuaRt)->assertOk()
+            ->assertJsonPath('data.kop.city', 'Kota Tangerang')
+            ->assertJsonPath('data.rw.signature_file_id', $rwSignature)
+            ->assertJsonPath('data.rw.unit.id', $rw->id);
+        // Ketua RT boleh melihat tanda tangan Ketua RW yang tampil di suratnya.
+        $this->postJson("/api/v1/files/{$rwSignature}/link", [], $ketuaRt)->assertOk();
     }
 
     public function test_rw_sample_uses_an_rt_below_and_never_prints_000(): void

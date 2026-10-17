@@ -37,9 +37,9 @@ Selesai W7: surat pengantar. Warga mengajukan untuk dirinya/anggota keluarganya 
 isian per jenis), pengurus RT meninjau → minta perbaikan / tolak / **setujui & terbitkan**. Saat disetujui, surat
 langsung mendapat nomor `001/RT005/SP/MM/yyyy` (urut per RT, mengulang dari 001 tiap ganti bulan/tahun, waktu
 Jakarta) dan PDF dibuat sesuai template surat pengantar (dompdf, Letter) lalu dibekukan terenkripsi; warga mengunduh
-PDF lewat tautan bertanda tangan 5 menit (diaudit, memuat NIK). Kop dan penanda tangan diatur per RT/RW di menu
-**Pengaturan surat**: nama Ketua RT/RW, kelurahan/kecamatan/kota/provinsi, logo kop, dan gambar tanda tangan + cap
-(PNG transparan disarankan) — Ketua RT untuk RT-nya, Ketua RW untuk RW-nya. Data warga kini punya kolom Agama.
+PDF lewat tautan bertanda tangan 5 menit (diaudit, memuat NIK). Kop dan penanda tangan diatur dalam satu tampilan per RT
+di menu **Pengaturan surat**: kop (kelurahan/kecamatan/kota/provinsi, logo), lalu nama + tanda tangan/cap Ketua RT dan
+Ketua RW (PNG transparan disarankan) — bagian RT diubah Ketua RT, bagian RW diubah Ketua RW, kop oleh keduanya. Data warga kini punya kolom Agama.
 Pemohon tidak bisa memproses suratnya sendiri. Butuh ekstensi PHP `gd` (sudah di Dockerfile). Belum: lampiran KTP/KK.
 
 Selesai W8: iuran. Bendahara membuat jenis iuran dan periode (tagihan otomatis untuk semua keluarga aktif),

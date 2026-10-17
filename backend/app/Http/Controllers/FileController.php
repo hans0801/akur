@@ -114,7 +114,11 @@ class FileController extends Controller
             ->where('signature_file_id', $file->id)->orWhere('logo_file_id', $file->id)
             ->with('unit')->first();
         if ($settings !== null) {
-            $this->access->authorize($user, $settings->unit, config('akur.document_read_roles'));
+            // Pengaturan RW tampil juga di layar pengaturan surat setiap RT di bawahnya.
+            $readable = $this->access->unitIdsWhere($user, config('akur.document_read_roles'));
+            if (array_intersect($settings->unit->selfAndDescendantIds(), $readable) === []) {
+                throw new AuthorizationException('Anda tidak memiliki akses ke berkas ini.');
+            }
 
             return;
         }

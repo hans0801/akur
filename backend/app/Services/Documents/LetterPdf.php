@@ -177,7 +177,7 @@ class LetterPdf
             'kopCity' => mb_strtoupper(trim("{$city} {$province}")),
             'regionText' => trim(($kelurahan ? "Kelurahan {$kelurahan} " : '').($kecamatan ? "Kecamatan {$kecamatan}" : '')),
             'city' => $city,
-            'logo' => $this->imageUri($rwSet?->logo_file_id ?? $rtSet?->logo_file_id) ?? self::defaultLogo(),
+            'logo' => $this->imageUri($rtSet?->logo_file_id ?? $rwSet?->logo_file_id) ?? self::defaultLogo(),
             'rtSigner' => $rtSet?->signer_name ?: ($rt ? $this->officerName($rt, Role::KETUA_RT) : null),
             'rwSigner' => $rwSet?->signer_name ?: ($rw ? $this->officerName($rw, Role::KETUA_RW) : null),
             'rtSignature' => $this->imageUri($rtSet?->signature_file_id),

@@ -7,9 +7,9 @@ import '../../widgets/async_view.dart';
 import '../finance/attachments.dart';
 import '../population/population_common.dart';
 
-/// Pengaturan surat pengantar per RT/RW: nama Ketua (penanda tangan), wilayah untuk kop surat,
-/// gambar tanda tangan + cap, dan logo kop. Ketua RT mengatur RT-nya, Ketua RW mengatur RW-nya.
-/// Daftar unit diambil dari server: unit keanggotaan pengguna beserta RT di bawah RW-nya (RT didahulukan).
+/// Pengaturan surat pengantar dalam satu tampilan per RT: kop surat (wilayah + logo), Ketua RT dan Ketua RW
+/// (nama penanda tangan + tanda tangan/cap). Tiap bagian hanya bisa diubah pemiliknya: Ketua RT untuk bagian RT,
+/// Ketua RW untuk bagian RW, kop oleh keduanya. Daftar unit dari server: RT keanggotaan pengguna beserta RT di bawah RW-nya.
 class LetterSettingsScreen extends StatefulWidget {
   const LetterSettingsScreen({super.key, required this.api});
 
@@ -20,7 +20,7 @@ class LetterSettingsScreen extends StatefulWidget {
 }
 
 class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
-  static const _fields = {
+  static const _kopFields = {
     'kelurahan': 'Kelurahan',
     'kecamatan': 'Kecamatan',
     'city': 'Kota/Kabupaten (mis. Kota Tangerang)',
@@ -31,11 +31,15 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
   UnitRef? _selected;
   Future<Map<String, dynamic>>? _data;
   final Map<String, TextEditingController> _controllers = {};
-  String? _newSignatureId;
-  String? _newLogoId;
+
+  /// Berkas baru yang belum disimpan, per kunci: 'logo', 'rt', 'rw'.
+  final Map<String, String?> _newFiles = {};
+  int _loadCount = 0;
   bool _saving = false;
 
   UnitRef get _unit => _selected!;
+
+  TextEditingController _controller(String key) => _controllers.putIfAbsent(key, TextEditingController.new);
 
   Future<List<UnitRef>> _loadUnits() async {
     final units = dataList(await widget.api.get('/letter-settings/units'))
@@ -52,26 +56,35 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
 
   Future<Map<String, dynamic>> _load() async {
     final data = (await widget.api.get('/units/${_unit.id}/letter-settings'))['data'] as Map<String, dynamic>;
-    for (final key in ['signer_name', ..._fields.keys]) {
-      _controllers.putIfAbsent(key, TextEditingController.new).text = data[key] as String? ?? '';
+    final kop = data['kop'] as Map<String, dynamic>;
+    for (final key in _kopFields.keys) {
+      _controller(key).text = kop[key] as String? ?? '';
     }
-    _newSignatureId = null;
-    _newLogoId = null;
+    for (final part in ['rt', 'rw']) {
+      _controller('${part}_signer').text = (data[part] as Map<String, dynamic>?)?['signer_name'] as String? ?? '';
+    }
+    _newFiles.clear();
+    _loadCount++;
     return data;
   }
 
   void _reload() => setState(() => _data = _load());
 
-  Future<void> _save() async {
+  bool _canEdit(Map<String, dynamic>? section) => section?['can_edit'] == true;
+
+  Future<void> _save(Map<String, dynamic> data) async {
     setState(() => _saving = true);
-    String? value(String key) => _controllers[key]!.text.trim().isEmpty ? null : _controllers[key]!.text.trim();
+    String? value(String key) => _controller(key).text.trim().isEmpty ? null : _controller(key).text.trim();
+    Map<String, dynamic> signer(String part) => {'signer_name': value('${part}_signer'), 'signature_file_id': ?_newFiles[part]};
     final ok = await runApi(
       context,
       () => widget.api.put('/units/${_unit.id}/letter-settings', {
-        'signer_name': value('signer_name'),
-        for (final key in _fields.keys) key: value(key),
-        'signature_file_id': ?_newSignatureId,
-        'logo_file_id': ?_newLogoId,
+        if (_canEdit(data['kop'] as Map<String, dynamic>)) ...{
+          for (final key in _kopFields.keys) key: value(key),
+          'logo_file_id': ?_newFiles['logo'],
+        },
+        for (final part in ['rt', 'rw'])
+          if (_canEdit(data[part] as Map<String, dynamic>?)) part: signer(part),
       }),
       'Pengaturan surat disimpan.',
     );
@@ -93,39 +106,87 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
     }
   }
 
-  Widget _imageRow(
-    Map<String, dynamic> data, {
+  Widget _imageRow({
     required String title,
-    required String column,
+    required String? current,
+    required String fileKey,
     required String purpose,
     required bool canEdit,
   }) {
-    final current = data[column] as String?;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleSmall),
+        Row(
+          children: [
+            Expanded(child: Text(current == null ? 'Belum ada.' : 'Sudah terpasang.')),
+            if (current != null) TextButton(onPressed: () => openAttachment(context, widget.api, current), child: const Text('Lihat')),
+          ],
+        ),
+        if (canEdit)
+          AttachmentPicker(
+            key: ValueKey('$fileKey-$_loadCount'),
+            api: widget.api,
+            purpose: purpose,
+            label: current == null ? 'Unggah:' : 'Ganti:',
+            resize: false,
+            onChanged: (id) => _newFiles[fileKey] = id,
+          ),
+      ],
+    );
+  }
+
+  Widget _section(
+    ThemeData theme, {
+    required String title,
+    required bool canEdit,
+    required String lockedNote,
+    required List<Widget> children,
+  }) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: Theme.of(context).textTheme.titleSmall),
-            const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(child: Text(current == null ? 'Belum ada.' : 'Sudah terpasang.')),
-                if (current != null) TextButton(onPressed: () => openAttachment(context, widget.api, current), child: const Text('Lihat')),
-              ],
-            ),
-            if (canEdit)
-              AttachmentPicker(
-                api: widget.api,
-                purpose: purpose,
-                label: current == null ? 'Unggah:' : 'Ganti:',
-                resize: false,
-                onChanged: (id) => column == 'signature_file_id' ? _newSignatureId = id : _newLogoId = id,
-              ),
+            Text(title, style: theme.textTheme.titleMedium),
+            if (!canEdit) ...[
+              const SizedBox(height: 4),
+              Text(lockedNote, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            ],
+            const SizedBox(height: 8),
+            ...children,
           ],
         ),
       ),
+    );
+  }
+
+  /// Bagian Ketua RT / Ketua RW: nama penanda tangan + tanda tangan dan cap.
+  Widget _signerSection(ThemeData theme, String part, Map<String, dynamic> section) {
+    final canEdit = _canEdit(section);
+    final unitName = (section['unit'] as Map<String, dynamic>)['name'] as String;
+    final role = part == 'rt' ? 'Ketua RT' : 'Ketua RW';
+    return _section(
+      theme,
+      title: '$role ($unitName)',
+      canEdit: canEdit,
+      lockedNote: 'Hanya $role yang dapat mengubah bagian ini.',
+      children: [
+        TextField(
+          controller: _controller('${part}_signer'),
+          enabled: canEdit,
+          decoration: InputDecoration(labelText: 'Nama $role (penanda tangan)'),
+        ),
+        const SizedBox(height: 12),
+        _imageRow(
+          title: 'Tanda tangan + cap',
+          current: section['signature_file_id'] as String?,
+          fileKey: part,
+          purpose: 'letter_signature',
+          canEdit: canEdit,
+        ),
+      ],
     );
   }
 
@@ -167,53 +228,55 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
               if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
               final data = snapshot.data!;
-              final canEdit = data['can_edit'] == true;
-              final isRt = (data['unit'] as Map<String, dynamic>)['unit_type'] == 'rt';
+              final kop = data['kop'] as Map<String, dynamic>;
+              final kopEditable = _canEdit(kop);
+              final rt = data['rt'] as Map<String, dynamic>?;
+              final rw = data['rw'] as Map<String, dynamic>?;
               return ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
                   Text(
-                    isRt
-                        ? 'Dipakai pada kop dan tanda tangan "Pengurus RT" di surat pengantar. Wilayah yang kosong memakai '
-                              'pengaturan RW induk.'
-                        : 'Nama dan tanda tangan Ketua RW tampil di kolom kiri surat pengantar setiap RT di bawah RW ini; '
-                              'wilayah dan logo RW menjadi bawaan untuk RT-nya.',
+                    'Semua isian di bawah dipakai pada surat pengantar ${(data['unit'] as Map<String, dynamic>)['name']}: '
+                    'kop surat, serta nama dan tanda tangan Ketua RT dan Ketua RW.',
                     style: theme.textTheme.bodySmall,
                   ),
-                  if (!canEdit) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      isRt ? 'Hanya Ketua RT yang dapat mengubah pengaturan ini.' : 'Hanya Ketua RW yang dapat mengubah pengaturan ini.',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error),
-                    ),
-                  ],
                   const SizedBox(height: 12),
-                  TextField(
-                    controller: _controllers['signer_name'],
-                    enabled: canEdit,
-                    decoration: InputDecoration(labelText: isRt ? 'Nama Ketua RT (penanda tangan)' : 'Nama Ketua RW (penanda tangan)'),
+                  _section(
+                    theme,
+                    title: 'Kop surat',
+                    canEdit: kopEditable,
+                    lockedNote: 'Hanya Ketua RT atau Ketua RW yang dapat mengubah kop surat.',
+                    children: [
+                      for (final e in _kopFields.entries) ...[
+                        TextField(
+                          controller: _controller(e.key),
+                          enabled: kopEditable,
+                          decoration: InputDecoration(labelText: e.value),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                      const SizedBox(height: 4),
+                      _imageRow(
+                        title: 'Logo kop surat (opsional)',
+                        current: kop['logo_file_id'] as String?,
+                        fileKey: 'logo',
+                        purpose: 'letter_logo',
+                        canEdit: kopEditable,
+                      ),
+                    ],
                   ),
-                  for (final e in _fields.entries) ...[
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _controllers[e.key],
-                      enabled: canEdit,
-                      decoration: InputDecoration(labelText: e.value),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  _imageRow(data, title: 'Tanda tangan + cap', column: 'signature_file_id', purpose: 'letter_signature', canEdit: canEdit),
+                  if (rt != null) ...[const SizedBox(height: 8), _signerSection(theme, 'rt', rt)],
+                  if (rw != null) ...[const SizedBox(height: 8), _signerSection(theme, 'rw', rw)],
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
                     child: Text(
-                      'Gunakan PNG berlatar transparan (maks 2 MB) agar tanda tangan tidak menutupi teks.',
+                      'Gunakan PNG berlatar transparan (maks 2 MB) untuk tanda tangan + cap agar tidak menutupi teks.',
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  _imageRow(data, title: 'Logo kop surat (opsional)', column: 'logo_file_id', purpose: 'letter_logo', canEdit: canEdit),
                   const SizedBox(height: 16),
-                  if (canEdit) FilledButton(onPressed: _saving ? null : _save, child: Text(_saving ? 'Menyimpan…' : 'Simpan')),
+                  if (data['can_edit'] == true)
+                    FilledButton(onPressed: _saving ? null : () => _save(data), child: Text(_saving ? 'Menyimpan…' : 'Simpan')),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: _preview,
