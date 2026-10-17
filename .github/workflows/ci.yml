@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: akur_test
+          POSTGRES_USER: akur
+          POSTGRES_PASSWORD: akur_ci
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U akur -d akur_test"
+          --health-interval 5s --health-retries 10
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: "5432"
+      DB_PASSWORD: akur_ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_pgsql, intl
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      - run: vendor/bin/pint --test
+      - run: vendor/bin/phpunit
+      - run: composer audit
+
+  app:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+      - run: flutter build web --release --dart-define=GOOGLE_WEB_CLIENT_ID=ci-placeholder
+
+  secrets-guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tolak file rahasia yang ter-commit
+        run: |
+          if git ls-files | grep -E '(^|/)\.env(\.production)?$|google-services\.json$|\.keystore$|\.jks$'; then
+            echo "File rahasia ditemukan di repo." && exit 1
+          fi

@@ -1,0 +1,41 @@
+# Edge proxy AKUR. Web app dan API berada di satu origin sehingga cookie sesi
+# bisa SameSite=Strict dan tidak perlu CORS di produksi.
+#
+# Sertifikat: per-host via HTTP-01 (otomatis). Untuk sertifikat wildcard
+# *.rt05rw06larinda.my.id lihat infra/caddy/README.md (butuh DNS challenge).
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	handle /api/* {
+		reverse_proxy api:8080
+	}
+
+	handle /up {
+		reverse_proxy api:8080
+	}
+
+	# Flutter web (hasil `flutter build web`, disalin ke infra/web-dist saat deploy).
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}

@@ -1,0 +1,6 @@
+.env
+backend/.env.production
+infra/web-dist/
+.idea/
+.vscode/
+*.log

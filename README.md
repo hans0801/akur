@@ -1,0 +1,106 @@
+# AKUR — Aplikasi Kerukunan Warga
+
+Administrasi RT/RW untuk Android dan Web. Lihat PRD v0.1 untuk ruang lingkup.
+
+| Folder | Isi |
+|---|---|
+| `backend/` | Laravel 13 API (PHP 8.3) + PostgreSQL 17 |
+| `app/` | Flutter (Android + Web), tema terracotta |
+| `infra/` | Caddy (edge/TLS), init Postgres dev |
+| `compose.yaml` | Stack produksi/pilot VPS (Caddy + API + Postgres) |
+| `compose.dev.yaml` | Postgres lokal untuk pengembangan |
+
+## Status implementasi
+
+Selesai (fondasi W3 + Auth W4):
+
+- Skema PostgreSQL seluruh tabel MVP (PRD §9, tanpa marketplace fase 2): UUID, `timestamptz`, uang `bigint`,
+  FK/UNIQUE/CHECK, audit log *append-only* (trigger menolak UPDATE/DELETE).
+- Login Google: ID token diverifikasi di server (signature JWKS, `iss`, `aud`, `exp`), identitas dikunci pada `sub`.
+- Akun baru selalu `pending` tanpa peran; pengurus menautkannya ke data warga (FR-02).
+- Sesi milik AKUR: token opak, hanya SHA-256 yang disimpan, bisa dicabut, sliding expiry 30 hari (maks. 90).
+  Android → Bearer + secure storage. Web → cookie `HttpOnly; Secure; SameSite=Strict` + header CSRF.
+- RBAC per unit (RW mencakup RT di bawahnya), matriks pemberian peran, larangan mengubah peran sendiri,
+  audit log setiap perubahan peran/penautan, rate limit login & endpoint sensitif.
+- Notifikasi in-app (gagal kirim tidak menggagalkan transaksi utama).
+- 42 test backend (auth, IDOR lintas RT, eskalasi peran, CSRF, audit) + test Flutter.
+
+Belum: CRUD warga/keluarga (W5), pengumuman/kegiatan (W6), surat (W7), iuran (W8), kas (W9),
+enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
+
+## Menjalankan lokal
+
+Prasyarat: PHP 8.3 + ekstensi `pdo_pgsql`, Composer, Docker, Flutter 3.47+.
+
+```bash
+docker compose -f compose.dev.yaml up -d
+```
+
+```bash
+cd backend && composer install && cp .env.example .env && php artisan key:generate && php artisan migrate --seed
+```
+
+Isi `GOOGLE_CLIENT_IDS` di `backend/.env` dengan Web client ID, lalu:
+
+```bash
+cd backend && php artisan serve
+```
+
+```bash
+cd app && flutter run -d chrome --web-port 5173 --dart-define=API_BASE_URL=http://localhost:8000 --dart-define=GOOGLE_WEB_CLIENT_ID=<web-client-id>
+```
+
+Untuk web lokal, tambahkan `http://localhost:5173` ke `AKUR_WEB_ORIGINS` di `backend/.env`
+dan ke *Authorized JavaScript origins* di Google Cloud Console, serta set `AKUR_SESSION_COOKIE_SECURE=false`.
+
+Test backend (memakai database `akur_test` di container dev):
+
+```bash
+cd backend && vendor/bin/phpunit
+```
+
+> Laragon: `pdo_pgsql` belum aktif di `php.ini`. Aktifkan `extension=pdo_pgsql`, atau jalankan
+> `php -d extension=pdo_pgsql vendor/bin/phpunit`.
+
+## Bootstrap pengurus pertama
+
+Belum ada yang bisa memberi peran, jadi pengurus pertama ditetapkan dari server:
+
+1. Buat unit: `php artisan akur:create-unit rw 06 "RW 06"` dan `php artisan akur:create-unit rt 05 "RT 05" --parent=06`
+2. Orang tersebut login Google sekali (akun menjadi `pending`).
+3. `php artisan akur:grant-role email@gmail.com super_admin 06 --activate`
+
+Semua tercatat di `audit_logs`. Setelah itu penetapan peran dilakukan lewat aplikasi.
+
+## Matriks pemberian peran (FR-03)
+
+| Pemberi | Boleh menetapkan | Cakupan |
+|---|---|---|
+| super_admin | semua peran | unitnya + RT di bawahnya |
+| ketua_rw | ketua_rt, sekretaris, bendahara, warga | RT di bawah RW-nya (di level RW hanya warga) |
+| ketua_rt | sekretaris, bendahara, warga | RT-nya |
+
+Penautan akun pending: super_admin, ketua_rw, ketua_rt, sekretaris. Tidak ada yang bisa mengubah peran/akun sendiri.
+
+## Deploy ke VPS (manual, sementara)
+
+```bash
+cp .env.example .env && cp backend/.env.production.example backend/.env.production
+```
+
+Isi kedua file, salin hasil `flutter build web --release --dart-define=GOOGLE_WEB_CLIENT_ID=...` ke `infra/web-dist/`, lalu:
+
+```bash
+docker compose up -d --build && docker compose run --rm api php artisan migrate --force --seed --seeder=Database\\Seeders\\RoleSeeder
+```
+
+SSL wildcard: lihat [infra/caddy/README.md](infra/caddy/README.md).
+
+## Keputusan & asumsi yang perlu dikonfirmasi
+
+- **Laravel API biasa** dipilih alih-alih Apiato (lebih ringan untuk VPS 2 GB). Kode dikelompokkan per domain.
+- Nilai enum yang tidak ditetapkan PRD (`dues_types.frequency`, status kegiatan/rapat, `residency_status`)
+  dibiarkan tanpa CHECK sampai disepakati.
+- FK melingkar `households.head_resident_id ↔ residents.household_id` dibuat `DEFERRABLE`.
+- Satu akun hanya bisa terhubung ke satu data warga aktif (partial unique index).
+- Refresh token rotation belum dipakai; kolom `replaced_by_session_id` disiapkan.

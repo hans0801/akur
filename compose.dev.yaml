@@ -1,0 +1,23 @@
+# Hanya untuk pengembangan lokal: PostgreSQL di-bind ke 127.0.0.1 saja.
+# Produksi memakai compose.yaml (tanpa port database terbuka).
+name: akur-dev
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: akur
+      POSTGRES_USER: akur
+      POSTGRES_PASSWORD: akur_dev_only
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - db_dev:/var/lib/postgresql/data
+      - ./infra/postgres/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U akur -d akur"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  db_dev:

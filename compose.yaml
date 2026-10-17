@@ -1,0 +1,88 @@
+# Produksi/pilot di VPS (2 vCPU / 2 GB). Hanya Caddy yang membuka port 80/443.
+# PostgreSQL dan API berada di jaringan internal tanpa port publik (PRD §8).
+name: akur
+
+services:
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?APP_DOMAIN wajib diisi}
+      ACME_EMAIL: ${ACME_EMAIL:?ACME_EMAIL wajib diisi}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./infra/web-dist:/srv/web:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    depends_on:
+      api:
+        condition: service_healthy
+    mem_limit: 128m
+    logging: &logging
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  api:
+    build: ./backend
+    image: akur-api:latest
+    restart: unless-stopped
+    env_file: ./backend/.env.production
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-akur}
+      DB_USERNAME: ${DB_USERNAME:-akur}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi}
+      APP_URL: https://${APP_DOMAIN}
+      AKUR_WEB_ORIGINS: https://${APP_DOMAIN}
+    volumes:
+      # Berkas privat (KTP/KK/bukti bayar) — di luar webroot, ikut dibackup offsite.
+      - api_storage:/app/storage/app/private
+    networks: [edge, internal]
+    depends_on:
+      db:
+        condition: service_healthy
+    mem_limit: 512m
+    logging: *logging
+
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-akur}
+      POSTGRES_USER: ${DB_USERNAME:-akur}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=128MB
+      - -c
+      - max_connections=40
+      - -c
+      - work_mem=4MB
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      retries: 10
+    mem_limit: 512m
+    logging: *logging
+
+networks:
+  edge:
+  internal:
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  db_data:
+  api_storage:
