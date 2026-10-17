@@ -38,7 +38,13 @@ isian per jenis), pengurus RT meninjau → minta perbaikan / setujui / tolak →
 `001/RT05/RW06/X/2026`. Surat siap cetak (HTML A4, memuat NIK) dibuka lewat tautan bertanda tangan 5 menit; diaudit.
 Pemohon tidak bisa memproses suratnya sendiri. Belum: lampiran KTP/KK, PDF di server, tanda tangan digital.
 
-Belum: iuran (W8), kas (W9),
+Selesai W8: iuran. Bendahara membuat jenis iuran dan periode (tagihan otomatis untuk semua keluarga aktif),
+warga melapor pembayaran (dialokasikan ke tagihan terlama, `Idempotency-Key` mencegah ganda), bendahara
+memverifikasi/menolak atau mencatat tunai; pembayaran terverifikasi otomatis masuk kas sebagai pemasukan.
+Ketua RT/RW melihat rincian. Rekonsiliasi cache `amount_paid`: `php artisan akur:reconcile-dues [--fix]`.
+Belum: unggah bukti transfer, payment gateway.
+
+Belum: kas (W9),
 enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
 
 ## Menjalankan lokal

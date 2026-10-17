@@ -8,6 +8,8 @@ use App\Http\Controllers\Community\ActivityController;
 use App\Http\Controllers\Community\AnnouncementController;
 use App\Http\Controllers\Documents\DocumentRequestController;
 use App\Http\Controllers\Documents\LetterController;
+use App\Http\Controllers\Finance\DuesController;
+use App\Http\Controllers\Finance\PaymentController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Population\HouseController;
 use App\Http\Controllers\Population\HouseholdController;
@@ -39,6 +41,27 @@ Route::prefix('v1')->group(function () {
         // Hanya akun aktif (sudah ditautkan/diverifikasi).
         Route::middleware('account.active')->group(function () {
             Route::get('units/{unit}/memberships', [MembershipController::class, 'index'])->whereUuid('unit');
+
+            // W8: iuran dan pembayaran.
+            Route::whereUuid(['unit', 'duesType', 'duesPeriod', 'duesAssessment', 'payment'])->group(function () {
+                Route::get('my/dues', [PaymentController::class, 'myDues']);
+                Route::get('my/payments', [PaymentController::class, 'myPayments']);
+                Route::post('payments', [PaymentController::class, 'submit'])->middleware('throttle:sensitive');
+
+                Route::get('units/{unit}/dues-types', [DuesController::class, 'types']);
+                Route::post('units/{unit}/dues-types', [DuesController::class, 'storeType']);
+                Route::patch('dues-types/{duesType}', [DuesController::class, 'updateType']);
+                Route::get('dues-types/{duesType}/periods', [DuesController::class, 'periods']);
+                Route::post('dues-types/{duesType}/periods', [DuesController::class, 'storePeriod']);
+                Route::get('dues-periods/{duesPeriod}', [DuesController::class, 'showPeriod']);
+                Route::post('dues-periods/{duesPeriod}/close', [DuesController::class, 'closePeriod']);
+                Route::post('dues-assessments/{duesAssessment}/waive', [DuesController::class, 'waive']);
+
+                Route::get('units/{unit}/payments', [PaymentController::class, 'queue']);
+                Route::post('units/{unit}/payments', [PaymentController::class, 'recordCash'])->middleware('throttle:sensitive');
+                Route::post('payments/{payment}/verify', [PaymentController::class, 'verify']);
+                Route::post('payments/{payment}/reject', [PaymentController::class, 'reject']);
+            });
 
             // W7: surat pengantar. Pemohon = pemilik akun; pengurus memproses di unitnya.
             Route::whereUuid(['unit', 'documentRequest'])->group(function () {

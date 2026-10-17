@@ -63,6 +63,10 @@ class CurrentUser {
   /// Sama dengan config akur.document_read_roles (antrean surat pengantar).
   static const documentReadRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
 
+  /// Sama dengan config akur.finance_read_roles / finance_write_roles (iuran & kas).
+  static const financeReadRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'bendahara'};
+  static const financeWriteRoles = {'super_admin', 'bendahara'};
+
   final String id;
   final String displayName;
   final String? email;
@@ -93,4 +97,12 @@ class CurrentUser {
   List<UnitRef> get documentQueueUnits => {
         for (final m in memberships.where((m) => documentReadRoles.contains(m.role))) m.unit.id: m.unit,
       }.values.toList();
+
+  /// Unit yang data keuangannya bisa dibuka pengguna (hanya untuk menampilkan menu).
+  List<UnitRef> get financeUnits => {
+        for (final m in memberships.where((m) => financeReadRoles.contains(m.role))) m.unit.id: m.unit,
+      }.values.toList();
+
+  bool canWriteFinance(String unitId) =>
+      memberships.any((m) => financeWriteRoles.contains(m.role) && m.unit.id == unitId);
 }

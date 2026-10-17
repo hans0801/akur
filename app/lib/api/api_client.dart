@@ -46,7 +46,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> get(String path) => _send('GET', path);
 
-  Future<Map<String, dynamic>> post(String path, [Map<String, dynamic>? body]) => _send('POST', path, body);
+  /// `headers` untuk header tambahan, mis. Idempotency-Key pada pembayaran.
+  Future<Map<String, dynamic>> post(String path, [Map<String, dynamic>? body, Map<String, String>? headers]) =>
+      _send('POST', path, body, headers);
 
   Future<Map<String, dynamic>> put(String path, Map<String, dynamic> body) => _send('PUT', path, body);
 
@@ -54,9 +56,9 @@ class ApiClient {
 
   Future<Map<String, dynamic>> delete(String path, [Map<String, dynamic>? body]) => _send('DELETE', path, body);
 
-  Future<Map<String, dynamic>> _send(String method, String path, [Map<String, dynamic>? body]) async {
+  Future<Map<String, dynamic>> _send(String method, String path, [Map<String, dynamic>? body, Map<String, String>? headers]) async {
     final request = http.Request(method, Uri.parse('${AppConfig.apiBaseUrl}/api/v1$path'))
-      ..headers.addAll({'Accept': 'application/json', 'Content-Type': 'application/json'});
+      ..headers.addAll({'Accept': 'application/json', 'Content-Type': 'application/json', ...?headers});
 
     if (kIsWeb) {
       if (method != 'GET') request.headers['X-AKUR-CSRF'] = '1';

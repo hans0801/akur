@@ -6,6 +6,9 @@ import 'community/activities_screen.dart';
 import 'community/announcements_screen.dart';
 import 'documents/document_queue_screen.dart';
 import 'documents/document_requests_screen.dart';
+import 'finance/dues_admin_screen.dart';
+import 'finance/my_dues_screen.dart';
+import 'finance/payment_queue_screen.dart';
 import 'population/population_home_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -42,7 +45,7 @@ class HomeScreen extends StatelessWidget {
                 for (final m in user.memberships) Chip(label: Text('${m.roleName} · ${m.unit.name}')),
               ],
             ),
-            if (linking.isNotEmpty || user.populationMemberships.isNotEmpty || user.documentQueueUnits.isNotEmpty) ...[
+            if (linking.isNotEmpty || user.populationMemberships.isNotEmpty || user.documentQueueUnits.isNotEmpty || user.financeUnits.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text('Pengurus', style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -59,6 +62,30 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
+            if (user.financeUnits.isNotEmpty) ...[
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.receipt_long_outlined),
+                  title: const Text('Kelola iuran'),
+                  subtitle: const Text('Jenis iuran, periode, dan tagihan keluarga'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => DuesAdminScreen(api: auth.api, user: user)),
+                  ),
+                ),
+              ),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.fact_check_outlined),
+                  title: const Text('Verifikasi pembayaran'),
+                  subtitle: const Text('Pembayaran iuran yang dilaporkan warga'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => PaymentQueueScreen(api: auth.api, user: user)),
+                  ),
+                ),
+              ),
+            ],
             if (user.documentQueueUnits.isNotEmpty)
               Card(
                 child: ListTile(
@@ -122,11 +149,22 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            if (user.residentName != null)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.payments_outlined),
+                  title: const Text('Iuran keluarga'),
+                  subtitle: const Text('Tagihan dan lapor pembayaran'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => MyDuesScreen(api: auth.api)),
+                  ),
+                ),
+              ),
             const SizedBox(height: 24),
             Text('Segera hadir', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             for (final f in const [
-              (Icons.payments_outlined, 'Iuran & pembayaran'),
               (Icons.account_balance_wallet_outlined, 'Kas & laporan'),
             ])
               Padding(

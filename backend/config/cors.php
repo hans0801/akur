@@ -24,7 +24,7 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['Content-Type', 'Accept', 'Authorization', 'X-AKUR-CSRF', 'X-Request-Id'],
+    'allowed_headers' => ['Content-Type', 'Accept', 'Authorization', 'X-AKUR-CSRF', 'X-Request-Id', 'Idempotency-Key'],
 
     'exposed_headers' => ['X-Request-Id'],
 

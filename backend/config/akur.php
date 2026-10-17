@@ -45,6 +45,11 @@ return [
     // W6: pengumuman dan kegiatan. Semua anggota unit (termasuk warga dan bendahara) membaca yang sudah terbit.
     'community_write_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
 
+    // W8/W9: iuran dan kas. Bendahara mengelola; ketua RT/RW melihat ringkasan dan rincian.
+    // Warga hanya melihat tagihan/pembayaran keluarganya sendiri dan ringkasan kas agregat.
+    'finance_write_roles' => [Role::SUPER_ADMIN, Role::BENDAHARA],
+    'finance_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::BENDAHARA],
+
     // W7: surat pengantar. Pemrosesan oleh pengurus RT; ketua RW hanya melihat antrean.
     'document_process_roles' => [Role::SUPER_ADMIN, Role::KETUA_RT, Role::SEKRETARIS],
     'document_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
