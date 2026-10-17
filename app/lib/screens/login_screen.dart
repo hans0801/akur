@@ -32,7 +32,7 @@ class LoginScreen extends StatelessWidget {
                   Text('Aplikasi Kerukunan Warga', textAlign: TextAlign.center, style: theme.textTheme.titleMedium),
                   const SizedBox(height: 12),
                   Text(
-                    'Administrasi RT/RW dalam satu tempat: data warga, surat pengantar, iuran, kas, dan pengumuman.',
+                    'Administrasi RT dalam satu tempat: data warga, surat pengantar, iuran, kas, dan pengumuman.',
                     textAlign: TextAlign.center,
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
