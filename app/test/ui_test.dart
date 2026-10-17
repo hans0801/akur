@@ -2,11 +2,24 @@ import 'package:akur/api/api_client.dart';
 import 'package:akur/screens/community/community_common.dart';
 import 'package:akur/screens/documents/documents_common.dart';
 import 'package:akur/screens/finance/finance_common.dart';
+import 'package:akur/screens/documents/document_requests_screen.dart';
+import 'package:akur/widgets/akur_ui.dart';
 import 'package:akur/widgets/async_view.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('helper tampilan Harmoni Warga', () {
+    expect(formatMonthCode('2026-10'), 'Oktober 2026');
+    expect(formatMonthCode('bukan'), 'bukan');
+    expect(initialsOf('Bambang Hartono Putra'), 'BH');
+    expect(initialsOf('  '), '?');
+    expect(greetingNow(DateTime(2026, 1, 1, 7)), 'Selamat Pagi');
+    expect(greetingNow(DateTime(2026, 1, 1, 20)), 'Selamat Malam');
+    expect(documentStage('under_review').$2, 2);
+    expect(documentStage('issued').$1, 'Selesai / Siap diunduh');
+  });
+
   group('formatRupiah', () {
     test('memakai titik sebagai pemisah ribuan', () {
       expect(formatRupiah(0), 'Rp 0');

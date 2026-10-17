@@ -53,7 +53,7 @@ class _OperationalReportsScreenState extends State<OperationalReportsScreen> {
   Future<Map<String, dynamic>> _load() async =>
       (await widget.api.get('/units/${_unit.id}/reports/$_type?month=$_monthCode'))['data'] as Map<String, dynamic>;
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   Future<void> _export(String format) async {
     final messenger = ScaffoldMessenger.of(context);

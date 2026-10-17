@@ -25,7 +25,7 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
 
   Future<List<Map<String, dynamic>>> _load() async => dataList(await widget.api.get('/announcements'));
 
-  void _reload() => setState(() => _items = _load());
+  void _reload() => setState(() { _items = _load(); });
 
   Future<void> _create() async {
     final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
@@ -83,7 +83,7 @@ class _ManageAnnouncementsScreenState extends State<_ManageAnnouncementsScreen> 
   Future<List<Map<String, dynamic>>> _load() async =>
       dataList(await widget.api.get('/units/${_unit.id}/announcements?status=$_status'));
 
-  void _reload() => setState(() => _items = _load());
+  void _reload() => setState(() { _items = _load(); });
 
   @override
   Widget build(BuildContext context) {
@@ -195,7 +195,7 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
   Future<Map<String, dynamic>> _load() async =>
       (await widget.api.get('/announcements/${widget.announcementId}'))['data'] as Map<String, dynamic>;
 
-  void _reload() => setState(() => _item = _load());
+  void _reload() => setState(() { _item = _load(); });
 
   @override
   Widget build(BuildContext context) {
@@ -216,7 +216,7 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
                     final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(
                       builder: (_) => AnnouncementFormScreen(api: widget.api, units: widget.units, announcement: a),
                     ));
-                    if (saved == true) setState(() => _item = _load());
+                    if (saved == true) setState(() { _item = _load(); });
                   },
                 ),
             ],

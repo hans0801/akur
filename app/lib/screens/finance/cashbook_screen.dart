@@ -28,7 +28,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
 
   Future<Map<String, dynamic>> _load() => widget.api.get('/units/${_unit.id}/finance-transactions');
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   Future<void> _add() async {
     final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(

@@ -29,7 +29,7 @@ class _PaymentQueueScreenState extends State<PaymentQueueScreen> {
 
   Future<List<Map<String, dynamic>>> _load() async => dataList(await widget.api.get('/units/${_unit.id}/payments?status=$_status'));
 
-  void _reload() => setState(() => _items = _load());
+  void _reload() => setState(() { _items = _load(); });
 
   Future<void> _verify(Map<String, dynamic> p) async {
     if (await runApi(context, () => widget.api.post('/payments/${p['id']}/verify'), 'Pembayaran diverifikasi dan dicatat di kas.')) _reload();

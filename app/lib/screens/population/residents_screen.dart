@@ -26,7 +26,7 @@ class _ResidentsScreenState extends State<ResidentsScreen> {
     return dataList(await widget.scope.api.get('/units/${widget.scope.unit.id}/residents?status=$_status&q=$q'));
   }
 
-  void _reload() => setState(() => _residents = _load());
+  void _reload() => setState(() { _residents = _load(); });
 
   Future<void> _lookupNik() async {
     final controller = TextEditingController();

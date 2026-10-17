@@ -23,7 +23,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
     return (json['data'] as List<dynamic>).cast<Map<String, dynamic>>();
   }
 
-  void _reload() => setState(() => _pending = _load());
+  void _reload() => setState(() { _pending = _load(); });
 
   Future<void> _link(Map<String, dynamic> user) async {
     final resident = await showDialog<Map<String, dynamic>>(

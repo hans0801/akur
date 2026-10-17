@@ -22,7 +22,7 @@ class _ResidentDetailScreenState extends State<ResidentDetailScreen> {
   Future<Map<String, dynamic>> _load() async =>
       (await widget.scope.api.get('/residents/${widget.residentId}'))['data'] as Map<String, dynamic>;
 
-  void _reload() => setState(() => _resident = _load());
+  void _reload() => setState(() { _resident = _load(); });
 
   Future<void> _push(Widget screen) async {
     final saved = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => screen));

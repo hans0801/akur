@@ -34,7 +34,7 @@ class _DocumentQueueScreenState extends State<DocumentQueueScreen> {
   Future<List<Map<String, dynamic>>> _load() async =>
       dataList(await widget.api.get('/units/${_unit.id}/document-requests?status=$_status'));
 
-  void _reload() => setState(() => _items = _load());
+  void _reload() => setState(() { _items = _load(); });
 
   @override
   Widget build(BuildContext context) {
@@ -68,6 +68,7 @@ class _DocumentQueueScreenState extends State<DocumentQueueScreen> {
                 return RefreshIndicator(
                   onRefresh: () async => _reload(),
                   child: DocumentRequestList(
+                    api: widget.api,
                     items: snapshot.data!,
                     empty: 'Tidak ada pengajuan ${_filters[_status]!.toLowerCase()}.',
                     onTap: (d) async {

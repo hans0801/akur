@@ -26,7 +26,7 @@ class _DuesAdminScreenState extends State<DuesAdminScreen> {
 
   Future<List<Map<String, dynamic>>> _load() async => dataList(await widget.api.get('/units/${_unit.id}/dues-types'));
 
-  void _reload() => setState(() => _types = _load());
+  void _reload() => setState(() { _types = _load(); });
 
   Future<void> _createType() async {
     final name = TextEditingController();
@@ -135,7 +135,7 @@ class _PeriodsScreenState extends State<_PeriodsScreen> {
 
   Future<List<Map<String, dynamic>>> _load() async => dataList(await widget.api.get('/dues-types/${widget.type['id']}/periods'));
 
-  void _reload() => setState(() => _periods = _load());
+  void _reload() => setState(() { _periods = _load(); });
 
   Future<void> _create() async {
     final now = DateTime.now();
@@ -259,7 +259,7 @@ class _PeriodDetailScreenState extends State<PeriodDetailScreen> {
 
   Future<Map<String, dynamic>> _load() async => (await widget.api.get('/dues-periods/${widget.periodId}'))['data'] as Map<String, dynamic>;
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   Future<void> _recordCash(Map<String, dynamic> a, String unitId) async {
     final amount = TextEditingController(text: '${a['outstanding']}');

@@ -26,7 +26,7 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
     return dataList(await widget.scope.api.get('/units/${widget.scope.unit.id}/households?status=$_status&q=$q'));
   }
 
-  void _reload() => setState(() => _households = _load());
+  void _reload() => setState(() { _households = _load(); });
 
   Future<void> _create() async {
     if (widget.scope.unit.unitType != 'rt') {
@@ -135,7 +135,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
   Future<Map<String, dynamic>> _load() async =>
       (await widget.scope.api.get('/households/${widget.householdId}'))['data'] as Map<String, dynamic>;
 
-  void _reload() => setState(() => _household = _load());
+  void _reload() => setState(() { _household = _load(); });
 
   Future<void> _edit(Map<String, dynamic> household) async {
     final saved = await Navigator.of(context).push<bool>(

@@ -68,7 +68,7 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
     return data;
   }
 
-  void _reload() => setState(() => _data = _load());
+  void _reload() => setState(() { _data = _load(); });
 
   bool _canEdit(Map<String, dynamic>? section) => section?['can_edit'] == true;
 
@@ -200,7 +200,7 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
         builder: (context, unitsSnapshot) {
           if (unitsSnapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
           if (unitsSnapshot.hasError) {
-            return ErrorView(error: unitsSnapshot.error, onRetry: () => setState(() => _units = _loadUnits()));
+            return ErrorView(error: unitsSnapshot.error, onRetry: () => setState(() { _units = _loadUnits(); }));
           }
           final units = unitsSnapshot.data!;
           if (units.isEmpty) return const EmptyState('Tidak ada RT/RW yang pengaturan suratnya bisa Anda buka.');

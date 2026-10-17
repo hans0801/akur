@@ -24,7 +24,7 @@ class _DocumentRequestDetailScreenState extends State<DocumentRequestDetailScree
   Future<Map<String, dynamic>> _load() async =>
       (await widget.api.get('/document-requests/${widget.requestId}'))['data'] as Map<String, dynamic>;
 
-  void _reload() => setState(() => _item = _load());
+  void _reload() => setState(() { _item = _load(); });
 
   Future<void> _transition(String status) async {
     String? notes;

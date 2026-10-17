@@ -19,7 +19,7 @@ class _StreetsScreenState extends State<StreetsScreen> {
   Future<List<Map<String, dynamic>>> _load() async =>
       dataList(await widget.scope.api.get('/units/${widget.scope.unit.id}/streets?include_inactive=1'));
 
-  void _reload() => setState(() => _streets = _load());
+  void _reload() => setState(() { _streets = _load(); });
 
   Future<void> _edit([Map<String, dynamic>? street]) async {
     final controller = TextEditingController(text: street?['name'] as String?);
@@ -126,7 +126,7 @@ class _HousesScreenState extends State<HousesScreen> {
   Future<List<Map<String, dynamic>>> _load() async =>
       dataList(await widget.scope.api.get('/units/$_unitId/houses?street_id=${widget.street['id']}'));
 
-  void _reload() => setState(() => _houses = _load());
+  void _reload() => setState(() { _houses = _load(); });
 
   Future<void> _edit([Map<String, dynamic>? house]) async {
     final body = await showDialog<Map<String, dynamic>>(
