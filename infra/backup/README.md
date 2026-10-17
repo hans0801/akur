@@ -1,6 +1,9 @@
 # Backup offsite & restore drill (W11)
 
-Target: **RPO 24 jam** (backup harian), **RTO 4 jam** (restore ke VPS baru), drill restore **bulanan**.
+Target PRD: **RPO 24 jam** (backup harian) dan **RTO 8 jam** (layanan pulih di VPS baru). Keduanya harus *teruji*:
+restore drill **bulanan** mencatat durasi restore, dan umur backup terbaru dicek di checklist rilis.
+Penyimpanan offsite memakai **akun penyedia yang terpisah** dari penyedia VPS, agar satu akun yang bobol atau
+diblokir tidak menghapus server sekaligus backupnya.
 
 ## Apa yang dibackup
 
@@ -65,7 +68,8 @@ Script mengunduh backup terbaru, mendekripsi, memeriksa SHA256, me-restore ke co
 - `amount_paid` iuran cocok dengan pembayaran terverifikasi; tidak ada transaksi pembalik yatim;
 - ringkasan jumlah baris per tabel.
 
-Hasil dicatat di `$BACKUP_DIR/restore-drill.log`; salin ringkasannya ke checklist rilis
+Hasil dicatat di `$BACKUP_DIR/restore-drill.log` termasuk **durasi** dan apakah masih dalam target RTO
+(`RESTORE_RTO_SECONDS`, bawaan 8 jam); salin ringkasannya ke checklist rilis
 ([docs/security/checklist.md](../../docs/security/checklist.md)). Container dihapus otomatis (`--keep` untuk memeriksa).
 
 ## Restore sungguhan (bencana)

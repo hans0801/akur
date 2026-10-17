@@ -4,3 +4,7 @@ infra/web-dist/
 .idea/
 .vscode/
 *.log
+
+# Kunci backup age / kunci lain yang tidak boleh ter-commit
+*.age
+*.key

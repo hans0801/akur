@@ -63,8 +63,8 @@ Selesai W11 (security & backup): desain enkripsi NIK/KK final dengan rotasi kunc
 ([docs/security/field-encryption.md](docs/security/field-encryption.md), `php artisan akur:pii-rotate`), redaksi data
 sensitif di semua log (NIK/KK, token, JWT, signature tautan; juga di log akses Caddy), header keamanan + `no-store`
 untuk respons API, `php artisan akur:security-check [--production]`, backup offsite terenkripsi age + rclone dan
-restore drill otomatis ([infra/backup](infra/backup/README.md)), serta
-[checklist keamanan rilis](docs/security/checklist.md).
+restore drill otomatis yang mencatat durasi terhadap target RPO 24 jam / RTO 8 jam ([infra/backup](infra/backup/README.md)),
+audit dependensi (`infra/security/dependency-audit.sh`), serta [checklist keamanan rilis](docs/security/checklist.md).
 
 Belum: QA & migrasi data uji (W12), deploy otomatis.
 

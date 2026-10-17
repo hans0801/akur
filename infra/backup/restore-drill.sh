@@ -25,6 +25,9 @@ for arg in "$@"; do
 done
 
 BACKUP_DIR="${BACKUP_DIR:-/var/backups/akur}"
+# RTO (PRD): pemulihan ≤ 8 jam. Drill mencatat durasinya agar target ini teruji, bukan sekadar janji.
+RTO_SECONDS="${RESTORE_RTO_SECONDS:-28800}"
+started_at="$(date +%s)"
 mkdir -p "$BACKUP_DIR"
 stamp="$(date -u +%Y%m%dT%H%M%SZ)"
 work="$(mktemp -d)"
@@ -69,12 +72,19 @@ docker exec -i "$container" psql -U akur -d akur_restore -v ON_ERROR_STOP=1 -q <
 files="$(tar -tzf "$work/storage.tar.gz" | grep -vc '/$' || true)"
 echo "[drill] berkas privat dalam arsip: $files"
 
+elapsed=$(( $(date +%s) - started_at ))
+duration="$(( elapsed / 60 ))m $(( elapsed % 60 ))s"
+rto_result="dalam target RTO"
+(( elapsed <= RTO_SECONDS )) || rto_result="MELEBIHI target RTO $(( RTO_SECONDS / 3600 )) jam"
+echo "[drill] durasi: $duration ($rto_result)"
+
 {
     echo "== restore drill $stamp =="
     echo "backup: $(basename "$SOURCE")"
     cat "$work/MANIFEST" 2>/dev/null || true
     cat "$work/report.txt"
     echo "berkas privat: $files"
+    echo "durasi: $duration ($rto_result)"
     echo "hasil: LULUS"
 } >> "$BACKUP_DIR/restore-drill.log"
 

@@ -11,12 +11,14 @@ Rilis: `__________`  Tanggal: `__________`  Pemeriksa: `__________`
 - [ ] `vendor/bin/phpunit` hijau di commit yang dirilis (termasuk uji IDOR lintas RT, peran, masking, rotasi kunci, log).
 - [ ] `flutter analyze` bersih dan `flutter test` hijau.
 - [ ] `php artisan akur:reconcile-dues` → "Semua tagihan cocok."
+- [ ] `infra/security/dependency-audit.sh` → tidak ada kerentanan diketahui (composer audit + OSV-Scanner pubspec.lock).
 
 ## 2. Konfigurasi & rahasia
 
 - [ ] `APP_KEY`, `AKUR_PII_ENCRYPTION_KEY`/`AKUR_PII_KEYS`, `AKUR_PII_LOOKUP_KEY`, kunci privat age tersimpan di password
       manager (minimal dua pengurus), **tidak** di repo maupun backup.
-- [ ] `.env*` produksi tidak ter-commit (`git status` bersih, `.gitignore` berlaku).
+- [ ] `.env*` produksi dan kunci tidak ter-commit: `git ls-files | grep -E '\.env($|\.)|\.key$|\.age$'` hanya menampilkan
+      berkas `*.example`.
 - [ ] `GOOGLE_CLIENT_IDS` hanya Web client ID; OAuth consent screen sudah *In production*.
 - [ ] Hanya port 80/443 terbuka di VPS (`ss -tlnp`); PostgreSQL tidak punya port publik.
 - [ ] Akses SSH hanya dengan kunci, login root dimatikan, pembaruan keamanan OS terpasang.
@@ -28,6 +30,11 @@ Rilis: `__________`  Tanggal: `__________`  Pemeriksa: `__________`
 - [ ] Tautan cetak surat/laporan kedaluwarsa setelah 5 menit dan menampilkan halaman "Tautan tidak berlaku".
 - [ ] NIK/KK tampil tersamar di aplikasi; *reveal* meminta alasan dan muncul di `audit_logs`.
 - [ ] Akun pengurus pertama dan peran sudah diperiksa (`user_memberships`), tidak ada super_admin yang tidak dikenal.
+- [ ] Rate limit aktif: login (10/menit/IP), API (120/menit/pengguna), endpoint sensitif (30/menit) — `routes/api.php`.
+- [ ] Unggahan hanya JPEG/PNG/WebP/PDF ≤ 5 MB (tipe dicek dari isi); berkas terenkripsi di `storage/app/private`;
+      service `scheduler` berjalan (`docker compose ps scheduler`) untuk menghapus unggahan yatim.
+- [ ] Cookie sesi web `HttpOnly; Secure; SameSite=Strict`, request berubah-data dari browser wajib `X-AKUR-CSRF`
+      dan origin terdaftar (uji: `tests/Feature/Auth/SessionTest.php`).
 
 ## 4. Log hygiene
 
@@ -43,9 +50,10 @@ Rilis: `__________`  Tanggal: `__________`  Pemeriksa: `__________`
 ```
 tanggal drill   :
 backup dipakai  :
+umur backup     :            (target RPO ≤ 24 jam)
+durasi restore  :            (target RTO ≤ 8 jam; dari log drill)
 migrations/users/residents/households/payments/finance_transactions/audit_logs :
 berkas privat   :
-durasi          :
 ```
 
 - [ ] Kunci PII yang dihapus dari keyring masih disimpan sampai semua backup yang membutuhkannya kedaluwarsa
