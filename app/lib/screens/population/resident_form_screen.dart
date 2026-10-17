@@ -23,6 +23,7 @@ class _ResidentFormScreenState extends State<ResidentFormScreen> {
   late final _marital = TextEditingController(text: widget.resident?['marital_status'] as String?);
   late final _occupation = TextEditingController(text: widget.resident?['occupation'] as String?);
   late final _education = TextEditingController(text: widget.resident?['education'] as String?);
+  late String? _religion = widget.resident?['religion'] as String?;
   final _reason = TextEditingController();
   late String? _birthDate = widget.resident?['birth_date'] as String?;
   late String? _gender = widget.resident?['gender'] as String?;
@@ -47,6 +48,7 @@ class _ResidentFormScreenState extends State<ResidentFormScreen> {
       'marital_status': _text(_marital),
       'occupation': _text(_occupation),
       'education': _text(_education),
+      'religion': _religion,
       if (_nik.text.trim().isNotEmpty) 'nik': _nik.text.trim(),
       if (_text(_reason) != null) 'reason': _text(_reason),
       if (!_isEdit) ...{
@@ -118,6 +120,16 @@ class _ResidentFormScreenState extends State<ResidentFormScreen> {
             TextFormField(controller: _occupation, decoration: const InputDecoration(labelText: 'Pekerjaan')),
             const SizedBox(height: 12),
             TextFormField(controller: _education, decoration: const InputDecoration(labelText: 'Pendidikan')),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String?>(
+              initialValue: religionOptions.contains(_religion) ? _religion : null,
+              decoration: const InputDecoration(labelText: 'Agama'),
+              items: [
+                const DropdownMenuItem(value: null, child: Text('-')),
+                for (final r in religionOptions) DropdownMenuItem(value: r, child: Text(r)),
+              ],
+              onChanged: (v) => setState(() => _religion = v),
+            ),
             if (!_isEdit) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(

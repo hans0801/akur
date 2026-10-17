@@ -117,6 +117,7 @@ class _ResidentDetailScreenState extends State<ResidentDetailScreen> {
                             ('Status perkawinan', r['marital_status']),
                             ('Pekerjaan', r['occupation']),
                             ('Pendidikan', r['education']),
+                            ('Agama', r['religion']),
                             ('Tanggal masuk', r['moved_in_at']),
                             ('Tanggal keluar', r['moved_out_at']),
                           ])

@@ -71,7 +71,7 @@ class ResidentController extends PopulationController
 
         $resident = DB::transaction(function () use ($data, $household, $unit, $request) {
             $resident = new Resident([
-                ...collect($data)->only(['full_name', 'birth_place', 'birth_date', 'gender', 'marital_status', 'occupation', 'education', 'residency_status', 'moved_in_at'])->all(),
+                ...collect($data)->only(['full_name', 'birth_place', 'birth_date', 'gender', 'marital_status', 'occupation', 'education', 'religion', 'residency_status', 'moved_in_at'])->all(),
                 'household_id' => $household->id,
                 'is_alive' => true,
                 'is_household_head' => false,
@@ -124,7 +124,7 @@ class ResidentController extends PopulationController
         ], ['prohibited' => $prohibited]);
 
         DB::transaction(function () use ($resident, $data, $unit) {
-            $resident->fill(collect($data)->only(['full_name', 'birth_place', 'birth_date', 'gender', 'marital_status', 'occupation', 'education'])->all());
+            $resident->fill(collect($data)->only(['full_name', 'birth_place', 'birth_date', 'gender', 'marital_status', 'occupation', 'education', 'religion'])->all());
             $changes = self::dirtyChanges($resident);
 
             $piiChanged = [];
@@ -209,6 +209,7 @@ class ResidentController extends PopulationController
             'marital_status' => ['sometimes', 'nullable', 'string', 'max:30'],
             'occupation' => ['sometimes', 'nullable', 'string', 'max:120'],
             'education' => ['sometimes', 'nullable', 'string', 'max:80'],
+            'religion' => ['sometimes', 'nullable', Rule::in(Resident::RELIGIONS)],
         ];
     }
 

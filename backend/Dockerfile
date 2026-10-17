@@ -10,7 +10,8 @@ RUN composer dump-autoload --optimize --classmap-authoritative --no-dev
 
 FROM dunglas/frankenphp:1-php8.3-alpine
 
-RUN install-php-extensions pdo_pgsql intl opcache pcntl \
+# gd: dompdf butuh GD untuk gambar PNG beralpha (logo kop, tanda tangan + cap) di PDF surat.
+RUN install-php-extensions pdo_pgsql intl opcache pcntl gd \
     && cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 
 COPY docker/php.ini $PHP_INI_DIR/conf.d/zz-akur.ini

@@ -10,6 +10,7 @@ use App\Models\DocumentType;
 use App\Models\Resident;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\Documents\LetterPdf;
 use App\Services\Pii\PopulationPii;
 use Database\Seeders\DocumentTypeSeeder;
 use Illuminate\Support\Facades\URL;
@@ -107,16 +108,17 @@ class DocumentRequestTest extends TestCase
             ->assertOk()->assertJsonPath('data.status', 'submitted');
 
         $this->postJson("/api/v1/document-requests/{$first}/transition", ['status' => 'issued'], $ketua)->assertConflict();
-        $this->postJson("/api/v1/document-requests/{$first}/transition", ['status' => 'approved'], $ketua)->assertOk();
-        $this->postJson("/api/v1/document-requests/{$first}/transition", ['status' => 'issued'], $ketua)->assertOk();
+        // Menyetujui langsung menerbitkan: nomor surat diberikan dan PDF bisa diunduh.
+        $this->postJson("/api/v1/document-requests/{$first}/transition", ['status' => 'approved'], $ketua)
+            ->assertOk()->assertJsonPath('data.status', 'issued');
 
         $second = $this->submit($warga, $resident, 'skck');
         $this->postJson("/api/v1/document-requests/{$second}/transition", ['status' => 'approved'], $ketua)->assertOk();
-        $this->postJson("/api/v1/document-requests/{$second}/transition", ['status' => 'issued'], $ketua)->assertOk();
 
-        $suffix = '/RT05/RW06/'.['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'][now()->month - 1].'/'.now()->year;
+        $suffix = '/RT005/SP/'.now('Asia/Jakarta')->format('m/Y');
         $this->assertSame('001'.$suffix, DocumentRequest::find($first)->letter_number);
         $this->assertSame('002'.$suffix, DocumentRequest::find($second)->letter_number);
+        $this->assertNotNull(DocumentRequest::find($first)->output_file_id);
         $this->assertTrue(AppNotification::query()->where('user_id', $warga->id)->where('type', 'document_request.issued')->exists());
 
         $this->postJson("/api/v1/document-requests/{$first}/cancel", [], $wargaHeaders)->assertConflict();
@@ -168,15 +170,23 @@ class DocumentRequestTest extends TestCase
 
         $this->postJson("/api/v1/document-requests/{$id}/letter-link", [], $wargaHeaders)->assertConflict();
         $this->postJson("/api/v1/document-requests/{$id}/transition", ['status' => 'approved'], $ketua)->assertOk();
-        $this->postJson("/api/v1/document-requests/{$id}/transition", ['status' => 'issued'], $ketua)->assertOk();
 
         $url = $this->postJson("/api/v1/document-requests/{$id}/letter-link", [], $wargaHeaders)->assertOk()->json('data.url');
 
-        $html = $this->get($url)->assertOk()->assertHeader('Cache-Control', 'no-store, private')->getContent();
-        $this->assertStringContainsString(self::NIK, $html);
-        $this->assertStringContainsString('Warung Sari', $html);
-        $this->assertStringContainsString(DocumentRequest::find($id)->letter_number, $html);
+        $number = DocumentRequest::find($id)->letter_number;
+        $pdf = $this->get($url)
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf')
+            ->assertHeader('Cache-Control', 'no-store, private')
+            ->assertHeader('Content-Disposition', 'attachment; filename="Surat-Pengantar-'.str_replace('/', '-', $number).'.pdf"')
+            ->getContent();
+        $this->assertStringStartsWith('%PDF-', $pdf);
         $this->assertTrue(AuditLog::query()->where('action', 'document_request.letter_viewed')->where('entity_id', $id)->exists());
+
+        $html = app(LetterPdf::class)->htmlFor(DocumentRequest::find($id));
+        foreach ([self::NIK, 'Warung Sari', $number, 'SURAT PENGANTAR', 'Siti Pemohon'] as $expected) {
+            $this->assertStringContainsString($expected, $html);
+        }
 
         $this->get($url.'x')->assertForbidden();
         $this->get(route('documents.letter', ['documentRequest' => $id]))->assertForbidden();

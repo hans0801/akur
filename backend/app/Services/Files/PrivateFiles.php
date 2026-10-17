@@ -2,9 +2,11 @@
 
 namespace App\Services\Files;
 
+use App\Models\DocumentRequest;
 use App\Models\FileObject;
 use App\Models\FinanceTransaction;
 use App\Models\Payment;
+use App\Models\UnitLetterSetting;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -32,15 +34,21 @@ class PrivateFiles
             throw ValidationException::withMessages(['file' => 'Berkas kosong atau tidak terbaca.']);
         }
 
+        // Tipe dari isi berkas (finfo), sudah divalidasi aturan `mimetypes` di controller.
+        return $this->storeContent($content, $upload->getMimeType(), basename($upload->getClientOriginalName()), $classification, $owner);
+    }
+
+    /** Simpan isi yang dibuat server (mis. PDF surat) dengan enkripsi dan checksum yang sama seperti unggahan. */
+    public function storeContent(string $content, string $mimeType, string $filename, string $classification, ?User $owner = null): FileObject
+    {
         $key = $classification.'/'.now()->format('Y/m').'/'.Str::uuid();
         Storage::disk(self::DISK)->put($key, Crypt::encryptString($content));
 
         $file = new FileObject([
-            'owner_user_id' => $owner->id,
+            'owner_user_id' => $owner?->id,
             'storage_key' => $key,
-            'original_filename' => Str::limit(basename($upload->getClientOriginalName()), 200, ''),
-            // Tipe dari isi berkas (finfo), sudah divalidasi aturan `mimetypes` di controller.
-            'mime_type' => $upload->getMimeType(),
+            'original_filename' => Str::limit($filename, 200, ''),
+            'mime_type' => $mimeType,
             'byte_size' => strlen($content),
             'classification' => $classification,
             'encryption_key_version' => self::KEY_VERSION,
@@ -88,7 +96,9 @@ class PrivateFiles
     public function isAttached(FileObject $file): bool
     {
         return Payment::query()->where('proof_file_id', $file->id)->exists()
-            || FinanceTransaction::query()->where('receipt_file_id', $file->id)->exists();
+            || FinanceTransaction::query()->where('receipt_file_id', $file->id)->exists()
+            || UnitLetterSetting::query()->where('signature_file_id', $file->id)->orWhere('logo_file_id', $file->id)->exists()
+            || DocumentRequest::query()->where('output_file_id', $file->id)->exists();
     }
 
     public function delete(FileObject $file): void

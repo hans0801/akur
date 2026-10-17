@@ -24,6 +24,10 @@ class PruneOrphanFiles extends Command
             ->where('created_at', '<', now()->subHours(config('akur.uploads.orphan_ttl_hours')))
             ->whereNotExists(fn ($q) => $q->from('payments')->whereColumn('payments.proof_file_id', 'file_objects.id'))
             ->whereNotExists(fn ($q) => $q->from('finance_transactions')->whereColumn('finance_transactions.receipt_file_id', 'file_objects.id'))
+            ->whereNotExists(fn ($q) => $q->from('unit_letter_settings')->where(fn ($w) => $w
+                ->whereColumn('unit_letter_settings.signature_file_id', 'file_objects.id')
+                ->orWhereColumn('unit_letter_settings.logo_file_id', 'file_objects.id')))
+            ->whereNotExists(fn ($q) => $q->from('document_requests')->whereColumn('document_requests.output_file_id', 'file_objects.id'))
             ->chunkById(100, function ($chunk) use ($files, &$deleted) {
                 foreach ($chunk as $file) {
                     if (! $this->option('dry-run')) {

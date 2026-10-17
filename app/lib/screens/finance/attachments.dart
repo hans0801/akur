@@ -8,13 +8,16 @@ import '../../widgets/async_view.dart';
 /// Pilih foto (kamera/galeri), unggah sebagai berkas privat, dan kembalikan id berkasnya.
 /// Gambar diperkecil di perangkat agar hemat kuota dan di bawah batas unggahan server (5 MB).
 class AttachmentPicker extends StatefulWidget {
-  const AttachmentPicker({super.key, required this.api, required this.purpose, required this.label, required this.onChanged});
+  const AttachmentPicker({super.key, required this.api, required this.purpose, required this.label, required this.onChanged, this.resize = true});
 
   final ApiClient api;
 
-  /// `payment_proof` atau `finance_receipt`.
+  /// `payment_proof`, `finance_receipt`, `letter_signature`, atau `letter_logo`.
   final String purpose;
   final String label;
+
+  /// false untuk tanda tangan/logo: berkas asli (PNG transparan) tidak diperkecil atau dikonversi ke JPEG.
+  final bool resize;
   final ValueChanged<String?> onChanged;
 
   @override
@@ -27,7 +30,9 @@ class _AttachmentPickerState extends State<AttachmentPicker> {
 
   Future<void> _pick(ImageSource source) async {
     final messenger = ScaffoldMessenger.of(context);
-    final picked = await ImagePicker().pickImage(source: source, maxWidth: 1600, maxHeight: 1600, imageQuality: 80);
+    final picked = widget.resize
+        ? await ImagePicker().pickImage(source: source, maxWidth: 1600, maxHeight: 1600, imageQuality: 80)
+        : await ImagePicker().pickImage(source: source);
     if (picked == null) return;
 
     setState(() => _uploading = true);

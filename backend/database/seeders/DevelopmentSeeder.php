@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AdministrativeUnit;
 use App\Models\Household;
 use App\Models\Resident;
+use App\Models\UnitLetterSetting;
 use Illuminate\Database\Seeder;
 
 /**
@@ -23,6 +24,14 @@ class DevelopmentSeeder extends Seeder
             ['unit_type' => AdministrativeUnit::TYPE_RT, 'code' => '05', 'parent_unit_id' => $rw->id],
             ['name' => 'RT 05'],
         );
+
+        // Kop surat contoh sesuai template; nama penanda tangan diambil dari pemegang peran bila kosong.
+        UnitLetterSetting::query()->firstOrCreate(['unit_id' => $rw->id], [
+            'kelurahan' => 'Larangan Indah',
+            'kecamatan' => 'Larangan',
+            'city' => 'Kota Tangerang',
+            'province' => 'Banten',
+        ]);
 
         if (Household::query()->where('unit_id', $rt->id)->exists()) {
             return;

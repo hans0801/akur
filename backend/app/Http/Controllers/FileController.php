@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\FileObject;
 use App\Models\FinanceTransaction;
 use App\Models\Payment;
+use App\Models\Role;
+use App\Models\UnitLetterSetting;
 use App\Models\User;
 use App\Services\Access\UnitAccess;
 use App\Services\Audit\AuditLogger;
@@ -31,13 +33,20 @@ class FileController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $imageOnly = in_array($request->input('purpose'), FileObject::IMAGE_ONLY, true);
         $data = $request->validate([
             'purpose' => ['required', Rule::in(FileObject::CLASSIFICATIONS)],
-            'file' => ['required', 'file', 'max:'.config('akur.uploads.max_kb'), 'mimetypes:'.implode(',', config('akur.uploads.mimes'))],
+            'file' => $imageOnly
+                // Tanda tangan/logo masuk ke PDF: hanya PNG/JPEG (PNG transparan disarankan), maks 2 MB.
+                ? ['required', 'file', 'max:2048', 'mimetypes:image/png,image/jpeg']
+                : ['required', 'file', 'max:'.config('akur.uploads.max_kb'), 'mimetypes:'.implode(',', config('akur.uploads.mimes'))],
         ]);
         if ($data['purpose'] === FileObject::FINANCE_RECEIPT
             && $this->access->unitIdsWhere($request->user(), config('akur.finance_write_roles')) === []) {
             throw new AuthorizationException('Hanya bendahara yang dapat mengunggah nota kas.');
+        }
+        if ($imageOnly && $this->access->unitIdsWhere($request->user(), [Role::SUPER_ADMIN, Role::KETUA_RT, Role::KETUA_RW]) === []) {
+            throw new AuthorizationException('Hanya Ketua RT/RW yang dapat mengunggah tanda tangan atau logo surat.');
         }
 
         $file = $this->files->store($request->file('file'), $request->user(), $data['purpose']);
@@ -101,7 +110,17 @@ class FileController extends Controller
             return;
         }
 
-        if ($file->owner_user_id !== $user->id) {
+        $settings = UnitLetterSetting::query()
+            ->where('signature_file_id', $file->id)->orWhere('logo_file_id', $file->id)
+            ->with('unit')->first();
+        if ($settings !== null) {
+            $this->access->authorize($user, $settings->unit, config('akur.document_read_roles'));
+
+            return;
+        }
+
+        // PDF surat hanya lewat tautan surat (DocumentRequestController::letterLink), bukan lewat endpoint berkas.
+        if ($file->classification === FileObject::LETTER_PDF || $file->owner_user_id !== $user->id) {
             throw new AuthorizationException('Anda tidak memiliki akses ke berkas ini.');
         }
     }

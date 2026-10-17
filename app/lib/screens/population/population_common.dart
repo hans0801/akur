@@ -32,6 +32,9 @@ const movementTypeLabels = {
 
 const genderLabels = {'male': 'Laki-laki', 'female': 'Perempuan'};
 
+/// Sama dengan Resident::RELIGIONS di backend (dipakai pada surat pengantar).
+const religionOptions = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Kepercayaan'];
+
 const householdStatusLabels = {'active': 'Aktif', 'moved_out': 'Pindah', 'inactive': 'Tidak aktif'};
 
 const occupancyStatusLabels = {

@@ -12,6 +12,7 @@ use App\Models\UserMembership;
 use App\Services\Access\UnitAccess;
 use App\Services\Audit\AuditLogger;
 use App\Services\Documents\LetterNumberer;
+use App\Services\Documents\LetterPdf;
 use App\Services\Notifications\Notifier;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -162,8 +163,12 @@ class DocumentRequestController extends Controller
         return $this->show($request, $documentRequest->refresh());
     }
 
-    /** Tinjauan pengurus: under_review / revision_requested / approved / rejected / issued. */
-    public function transition(Request $request, DocumentRequest $documentRequest, LetterNumberer $numberer): JsonResponse
+    /**
+     * Tinjauan pengurus: under_review / revision_requested / approved / rejected.
+     * "approved" langsung menerbitkan surat: nomor surat diberikan dan PDF dibuat, sehingga warga bisa langsung mengunduh.
+     * ("issued" tetap diterima untuk pengajuan lama yang masih berstatus approved.)
+     */
+    public function transition(Request $request, DocumentRequest $documentRequest, LetterNumberer $numberer, LetterPdf $pdf): JsonResponse
     {
         $actor = $request->user();
         $this->access->authorize($actor, $documentRequest->unit, config('akur.document_process_roles'));
@@ -176,18 +181,19 @@ class DocumentRequestController extends Controller
             throw new AuthorizationException('Pengajuan Anda sendiri harus diproses pengurus lain.');
         }
 
-        DB::transaction(function () use ($documentRequest, $data, $actor, $numberer) {
+        $issued = DB::transaction(function () use ($documentRequest, $data, $actor, $numberer) {
             $locked = DocumentRequest::query()->lockForUpdate()->findOrFail($documentRequest->id);
             $from = $locked->status;
             abort_if(! in_array($data['status'], DocumentRequest::REVIEW_TRANSITIONS[$from] ?? [], true), 409, "Status tidak dapat diubah dari {$from} ke {$data['status']}.");
 
+            $issues = in_array($data['status'], [DocumentRequest::APPROVED, DocumentRequest::ISSUED], true);
             $locked->fill([
-                'status' => $data['status'],
+                'status' => $issues ? DocumentRequest::ISSUED : $data['status'],
                 'admin_notes' => $data['notes'] ?? $locked->admin_notes,
                 'processed_by' => $actor->id,
                 'processed_at' => now(),
             ]);
-            if ($data['status'] === DocumentRequest::ISSUED) {
+            if ($issues) {
                 $locked->fill(['letter_number' => $numberer->next($locked->unit), 'issued_at' => now()]);
             }
             $locked->save();
@@ -203,18 +209,25 @@ class DocumentRequestController extends Controller
                 DocumentRequest::REVISION_REQUESTED => 'perlu diperbaiki',
                 DocumentRequest::APPROVED => 'disetujui',
                 DocumentRequest::REJECTED => 'ditolak',
-                DocumentRequest::ISSUED => 'sudah terbit dan bisa dicetak',
+                DocumentRequest::ISSUED => 'disetujui dan sudah bisa diunduh (PDF)',
             ];
             $this->notifier->send($locked->requester_user_id, 'document_request.'.$locked->status, 'Status surat', "{$locked->documentType->name} {$messages[$locked->status]}.", [
                 'document_request_id' => $locked->id,
             ]);
+
+            return $locked->status === DocumentRequest::ISSUED ? $locked : null;
         });
+
+        // PDF dibekukan setelah commit; bila gagal, dibuat ulang saat pertama kali diunduh.
+        if ($issued !== null) {
+            $pdf->tryGenerateAndStore($issued);
+        }
 
         return $this->show($request, $documentRequest->refresh());
     }
 
     /**
-     * Tautan bertanda tangan berumur pendek ke surat siap cetak (HTML). Surat memuat NIK, jadi pembuatan tautan diaudit.
+     * Tautan bertanda tangan berumur pendek ke PDF surat. Surat memuat NIK, jadi pembuatan tautan diaudit.
      * Tautan dipakai karena browser/aplikasi eksternal tidak membawa token Bearer.
      */
     public function letterLink(Request $request, DocumentRequest $documentRequest): JsonResponse

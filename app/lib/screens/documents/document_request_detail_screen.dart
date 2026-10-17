@@ -36,15 +36,16 @@ class _DocumentRequestDetailScreenState extends State<DocumentRequestDetailScree
         action: documentActionLabels[status]!,
       );
       if (notes == null) return;
-    } else if (status == 'issued') {
+    } else if (status == 'approved' || status == 'issued') {
       final confirmed = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Terbitkan surat?'),
-          content: const Text('Nomor surat akan diberikan dan tidak dapat dibatalkan.'),
+          title: const Text('Setujui dan terbitkan surat?'),
+          content: const Text('Nomor surat diberikan, PDF dibuat dengan tanda tangan yang tersimpan, dan warga bisa langsung '
+              'mengunduhnya. Tindakan ini tidak dapat dibatalkan.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Terbitkan')),
+            FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Setujui & terbitkan')),
           ],
         ),
       );
@@ -54,7 +55,7 @@ class _DocumentRequestDetailScreenState extends State<DocumentRequestDetailScree
     final ok = await runApi(
       context,
       () => widget.api.post('/document-requests/${widget.requestId}/transition', {'status': status, 'notes': ?notes}),
-      'Status: ${documentStatusLabels[status]}.',
+      status == 'approved' ? 'Surat disetujui dan terbit. PDF siap diunduh.' : 'Status: ${documentStatusLabels[status]}.',
     );
     if (ok) _reload();
   }
@@ -131,8 +132,8 @@ class _DocumentRequestDetailScreenState extends State<DocumentRequestDetailScree
                     if (d['status'] == 'issued')
                       FilledButton.icon(
                         onPressed: () => openLetter(context, widget.api, widget.requestId),
-                        icon: const Icon(Icons.print_outlined),
-                        label: const Text('Buka & cetak surat'),
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('Unduh surat (PDF)'),
                       ),
                     if (d['is_mine'] == true && d['status'] == 'revision_requested')
                       FilledButton.icon(

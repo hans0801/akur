@@ -8,6 +8,7 @@ use App\Http\Controllers\Community\ActivityController;
 use App\Http\Controllers\Community\AnnouncementController;
 use App\Http\Controllers\Documents\DocumentRequestController;
 use App\Http\Controllers\Documents\LetterController;
+use App\Http\Controllers\Documents\LetterSettingsController;
 use App\Http\Controllers\FileController;
 use App\Http\Controllers\Finance\CashbookController;
 use App\Http\Controllers\Finance\DuesController;
@@ -31,6 +32,11 @@ Route::prefix('v1')->group(function () {
         ->whereUuid('documentRequest')
         ->middleware(['signed', 'throttle:sensitive'])
         ->name('documents.letter');
+
+    Route::get('letter-previews/{unit}', [LetterSettingsController::class, 'preview'])
+        ->whereUuid('unit')
+        ->middleware(['signed', 'throttle:sensitive'])
+        ->name('documents.letter-preview');
 
     Route::get('file-downloads/{file}', [FileController::class, 'download'])
         ->whereUuid('file')
@@ -111,6 +117,12 @@ Route::prefix('v1')->group(function () {
                 Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
                 Route::post('document-requests/{documentRequest}/transition', [DocumentRequestController::class, 'transition']);
                 Route::post('document-requests/{documentRequest}/letter-link', [DocumentRequestController::class, 'letterLink'])
+                    ->middleware('throttle:sensitive');
+
+                // Pengaturan surat per unit: penanda tangan, wilayah kop, logo, tanda tangan + cap.
+                Route::get('units/{unit}/letter-settings', [LetterSettingsController::class, 'show']);
+                Route::put('units/{unit}/letter-settings', [LetterSettingsController::class, 'update']);
+                Route::post('units/{unit}/letter-settings/preview-link', [LetterSettingsController::class, 'previewLink'])
                     ->middleware('throttle:sensitive');
             });
 

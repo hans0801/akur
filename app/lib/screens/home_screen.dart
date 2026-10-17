@@ -6,6 +6,7 @@ import 'community/activities_screen.dart';
 import 'community/announcements_screen.dart';
 import 'documents/document_queue_screen.dart';
 import 'documents/document_requests_screen.dart';
+import 'documents/letter_settings_screen.dart';
 import 'finance/cashbook_screen.dart';
 import 'finance/dues_admin_screen.dart';
 import 'finance/finance_report_screen.dart';
@@ -112,6 +113,18 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ],
+            if (user.documentQueueUnits.isNotEmpty)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.draw_outlined),
+                  title: const Text('Pengaturan surat'),
+                  subtitle: const Text('Nama ketua, kop, tanda tangan + cap'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => LetterSettingsScreen(api: auth.api, units: user.documentQueueUnits)),
+                  ),
+                ),
+              ),
             if (user.documentQueueUnits.isNotEmpty)
               Card(
                 child: ListTile(

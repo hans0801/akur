@@ -4,32 +4,45 @@ namespace App\Services\Documents;
 
 use App\Models\AdministrativeUnit;
 use App\Models\DocumentRequest;
+use Carbon\CarbonImmutable;
 
 /**
- * Nomor surat berurutan per unit per tahun, mis. "007/RT05/RW06/X/2026".
+ * Nomor surat pengantar: `{urut}/{RT005}/SP/{MM}/{yyyy}`, mis. "001/RT005/SP/10/2026".
+ * Nomor urut per unit dan mengulang dari 001 setiap ganti bulan (dan otomatis setiap ganti tahun),
+ * dihitung menurut waktu setempat (akur.report_timezone).
  * Dipanggil di dalam transaksi; baris unit dikunci agar dua penerbitan bersamaan tidak memakai nomor sama
  * (indeks unik unit_id + letter_number menjadi pengaman terakhir).
  */
 class LetterNumberer
 {
-    private const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII'];
+    public const KIND = 'SP';
 
-    public function next(AdministrativeUnit $unit): string
+    public function next(AdministrativeUnit $unit, ?CarbonImmutable $at = null): string
     {
         AdministrativeUnit::query()->whereKey($unit->id)->lockForUpdate()->first();
 
-        $now = now();
+        $local = ($at ?? CarbonImmutable::now())->setTimezone(config('akur.report_timezone'));
+        $monthStart = $local->startOfMonth();
+
         $sequence = DocumentRequest::query()
             ->where('unit_id', $unit->id)
             ->whereNotNull('letter_number')
-            ->whereYear('issued_at', $now->year)
+            ->where('issued_at', '>=', $monthStart->utc())
+            ->where('issued_at', '<', $monthStart->addMonth()->utc())
             ->count() + 1;
 
-        $parts = [str_pad((string) $sequence, 3, '0', STR_PAD_LEFT), strtoupper($unit->unit_type).$unit->code];
-        if ($unit->parent) {
-            $parts[] = strtoupper($unit->parent->unit_type).$unit->parent->code;
-        }
+        return implode('/', [
+            str_pad((string) $sequence, 3, '0', STR_PAD_LEFT),
+            self::unitCode($unit),
+            self::KIND,
+            $local->format('m'),
+            $local->format('Y'),
+        ]);
+    }
 
-        return implode('/', [...$parts, self::ROMAN[$now->month - 1], $now->year]);
+    /** "RT005" / "RW006": jenis unit + kode 3 digit. */
+    public static function unitCode(AdministrativeUnit $unit): string
+    {
+        return strtoupper($unit->unit_type).str_pad($unit->code, 3, '0', STR_PAD_LEFT);
     }
 }

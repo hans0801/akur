@@ -34,9 +34,13 @@ Warga RT melihat konten RT-nya dan RW induknya; pengurus (super_admin, ketua_rw,
 Notifikasi in-app saat terbit/dibuat/dibatalkan. Belum: notifikasi untuk pengumuman terjadwal, foto kegiatan.
 
 Selesai W7: surat pengantar. Warga mengajukan untuk dirinya/anggota keluarganya (7 jenis surat bawaan,
-isian per jenis), pengurus RT meninjau → minta perbaikan / setujui / tolak → terbitkan dengan nomor
-`001/RT05/RW06/X/2026`. Surat siap cetak (HTML A4, memuat NIK) dibuka lewat tautan bertanda tangan 5 menit; diaudit.
-Pemohon tidak bisa memproses suratnya sendiri. Belum: lampiran KTP/KK, PDF di server, tanda tangan digital.
+isian per jenis), pengurus RT meninjau → minta perbaikan / tolak / **setujui & terbitkan**. Saat disetujui, surat
+langsung mendapat nomor `001/RT005/SP/MM/yyyy` (urut per RT, mengulang dari 001 tiap ganti bulan/tahun, waktu
+Jakarta) dan PDF dibuat sesuai template surat pengantar (dompdf, Letter) lalu dibekukan terenkripsi; warga mengunduh
+PDF lewat tautan bertanda tangan 5 menit (diaudit, memuat NIK). Kop dan penanda tangan diatur per RT/RW di menu
+**Pengaturan surat**: nama Ketua RT/RW, kelurahan/kecamatan/kota/provinsi, logo kop, dan gambar tanda tangan + cap
+(PNG transparan disarankan) — Ketua RT untuk RT-nya, Ketua RW untuk RW-nya. Data warga kini punya kolom Agama.
+Pemohon tidak bisa memproses suratnya sendiri. Butuh ekstensi PHP `gd` (sudah di Dockerfile). Belum: lampiran KTP/KK.
 
 Selesai W8: iuran. Bendahara membuat jenis iuran dan periode (tagihan otomatis untuk semua keluarga aktif),
 warga melapor pembayaran (dialokasikan ke tagihan terlama, `Idempotency-Key` mencegah ganda), bendahara

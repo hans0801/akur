@@ -90,6 +90,7 @@ return [
         'reason' => 'alasan',
         'reference_code' => 'nomor referensi',
         'resident_id' => 'warga',
+        'religion' => 'agama',
         'residency_status' => 'status tinggal',
         'role' => 'peran',
         'starts_at' => 'waktu mulai',

@@ -21,9 +21,11 @@ class Resident extends Model
 
     public const GENDERS = ['male', 'female'];
 
+    public const RELIGIONS = ['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha', 'Konghucu', 'Kepercayaan'];
+
     protected $fillable = [
         'household_id', 'user_id', 'full_name', 'birth_place', 'birth_date', 'gender', 'marital_status',
-        'occupation', 'education', 'is_household_head', 'is_alive', 'residency_status', 'moved_in_at', 'moved_out_at',
+        'occupation', 'education', 'religion', 'is_household_head', 'is_alive', 'residency_status', 'moved_in_at', 'moved_out_at',
     ];
 
     // NIK hanya boleh keluar lewat endpoint khusus dengan masking + audit (FR-04).

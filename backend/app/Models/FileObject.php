@@ -21,7 +21,20 @@ class FileObject extends Model
 
     public const FINANCE_RECEIPT = 'finance_receipt';
 
-    public const CLASSIFICATIONS = [self::PAYMENT_PROOF, self::FINANCE_RECEIPT];
+    /** Gambar tanda tangan + cap penanda tangan surat (unit_letter_settings.signature_file_id). */
+    public const LETTER_SIGNATURE = 'letter_signature';
+
+    /** Logo kop surat (unit_letter_settings.logo_file_id). */
+    public const LETTER_LOGO = 'letter_logo';
+
+    /** PDF surat pengantar yang dibekukan saat terbit (document_requests.output_file_id); tidak diunggah pengguna. */
+    public const LETTER_PDF = 'letter_pdf';
+
+    /** Klasifikasi yang boleh diunggah lewat POST /files. */
+    public const CLASSIFICATIONS = [self::PAYMENT_PROOF, self::FINANCE_RECEIPT, self::LETTER_SIGNATURE, self::LETTER_LOGO];
+
+    /** Gambar untuk PDF: hanya PNG/JPEG (dompdf), maks 2 MB. */
+    public const IMAGE_ONLY = [self::LETTER_SIGNATURE, self::LETTER_LOGO];
 
     protected $fillable = ['owner_user_id', 'storage_key', 'original_filename', 'mime_type', 'byte_size', 'classification', 'encryption_key_version'];
 

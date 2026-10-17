@@ -17,7 +17,7 @@ const documentStatusLabels = {
 const documentActionLabels = {
   'under_review': 'Mulai tinjau',
   'revision_requested': 'Minta perbaikan',
-  'approved': 'Setujui',
+  'approved': 'Setujui & terbitkan',
   'rejected': 'Tolak',
   'issued': 'Terbitkan surat',
 };
@@ -40,7 +40,7 @@ class DocumentStatusChip extends StatelessWidget {
   }
 }
 
-/// Meminta tautan cetak berumur pendek lalu membukanya di browser (tautan memuat NIK; pembukaan diaudit server).
+/// Meminta tautan PDF berumur pendek lalu membukanya di browser untuk diunduh (PDF memuat NIK; unduhan diaudit server).
 Future<void> openLetter(BuildContext context, ApiClient api, String requestId) async {
   final messenger = ScaffoldMessenger.of(context);
   try {

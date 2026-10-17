@@ -32,6 +32,7 @@ class ResidentResource extends JsonResource
             'marital_status' => $this->marital_status,
             'occupation' => $this->occupation,
             'education' => $this->education,
+            'religion' => $this->religion,
             'is_household_head' => $this->is_household_head,
             'is_alive' => $this->is_alive,
             'residency_status' => $this->residency_status,
