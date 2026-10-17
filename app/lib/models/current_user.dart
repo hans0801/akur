@@ -60,6 +60,9 @@ class CurrentUser {
   /// Sama dengan config akur.community_write_roles (pengumuman & kegiatan).
   static const communityWriteRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
 
+  /// Sama dengan config akur.document_read_roles (antrean surat pengantar).
+  static const documentReadRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
+
   final String id;
   final String displayName;
   final String? email;
@@ -84,5 +87,10 @@ class CurrentUser {
   /// Unit tempat pengguna boleh membuat pengumuman/kegiatan (hanya untuk menampilkan tombol).
   List<UnitRef> get communityManageUnits => {
         for (final m in memberships.where((m) => communityWriteRoles.contains(m.role))) m.unit.id: m.unit,
+      }.values.toList();
+
+  /// Unit yang antrean suratnya bisa dibuka pengguna (hanya untuk menampilkan menu).
+  List<UnitRef> get documentQueueUnits => {
+        for (final m in memberships.where((m) => documentReadRoles.contains(m.role))) m.unit.id: m.unit,
       }.values.toList();
 }

@@ -33,7 +33,12 @@ Selesai W6: pengumuman (draf/terbit/arsip, jadwal tayang & kedaluwarsa) dan kegi
 Warga RT melihat konten RT-nya dan RW induknya; pengurus (super_admin, ketua_rw, ketua_rt, sekretaris) menulis.
 Notifikasi in-app saat terbit/dibuat/dibatalkan. Belum: notifikasi untuk pengumuman terjadwal, foto kegiatan.
 
-Belum: surat (W7), iuran (W8), kas (W9),
+Selesai W7: surat pengantar. Warga mengajukan untuk dirinya/anggota keluarganya (7 jenis surat bawaan,
+isian per jenis), pengurus RT meninjau → minta perbaikan / setujui / tolak → terbitkan dengan nomor
+`001/RT05/RW06/X/2026`. Surat siap cetak (HTML A4, memuat NIK) dibuka lewat tautan bertanda tangan 5 menit; diaudit.
+Pemohon tidak bisa memproses suratnya sendiri. Belum: lampiran KTP/KK, PDF di server, tanda tangan digital.
+
+Belum: iuran (W8), kas (W9),
 enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
 
 ## Menjalankan lokal
@@ -113,7 +118,7 @@ cp .env.example .env && cp backend/.env.production.example backend/.env.producti
 Isi kedua file, salin hasil `flutter build web --release --dart-define=GOOGLE_WEB_CLIENT_ID=...` ke `infra/web-dist/`, lalu:
 
 ```bash
-docker compose up -d --build && docker compose run --rm api php artisan migrate --force --seed --seeder=Database\\Seeders\\RoleSeeder
+docker compose up -d --build && docker compose run --rm api php artisan migrate --force && docker compose run --rm api php artisan db:seed --force --class=Database\\Seeders\\RoleSeeder && docker compose run --rm api php artisan db:seed --force --class=Database\\Seeders\\DocumentTypeSeeder
 ```
 
 SSL wildcard: lihat [infra/caddy/README.md](infra/caddy/README.md).

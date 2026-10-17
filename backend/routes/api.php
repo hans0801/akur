@@ -6,6 +6,8 @@ use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Community\ActivityController;
 use App\Http\Controllers\Community\AnnouncementController;
+use App\Http\Controllers\Documents\DocumentRequestController;
+use App\Http\Controllers\Documents\LetterController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Population\HouseController;
 use App\Http\Controllers\Population\HouseholdController;
@@ -16,6 +18,12 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
     Route::post('auth/google', GoogleLoginController::class)->middleware('throttle:auth');
+
+    // Surat siap cetak: tanpa sesi, hanya lewat tautan bertanda tangan berumur pendek (lihat letterLink).
+    Route::get('letters/{documentRequest}', LetterController::class)
+        ->whereUuid('documentRequest')
+        ->middleware(['signed', 'throttle:sensitive'])
+        ->name('documents.letter');
 
     // Terautentikasi — termasuk akun pending.
     Route::middleware(['auth:api', 'throttle:api'])->group(function () {
@@ -31,6 +39,21 @@ Route::prefix('v1')->group(function () {
         // Hanya akun aktif (sudah ditautkan/diverifikasi).
         Route::middleware('account.active')->group(function () {
             Route::get('units/{unit}/memberships', [MembershipController::class, 'index'])->whereUuid('unit');
+
+            // W7: surat pengantar. Pemohon = pemilik akun; pengurus memproses di unitnya.
+            Route::whereUuid(['unit', 'documentRequest'])->group(function () {
+                Route::get('document-types', [DocumentRequestController::class, 'types']);
+                Route::get('document-requests/eligible-residents', [DocumentRequestController::class, 'eligibleResidents']);
+                Route::get('document-requests', [DocumentRequestController::class, 'mine']);
+                Route::post('document-requests', [DocumentRequestController::class, 'store']);
+                Route::get('units/{unit}/document-requests', [DocumentRequestController::class, 'queue']);
+                Route::get('document-requests/{documentRequest}', [DocumentRequestController::class, 'show']);
+                Route::put('document-requests/{documentRequest}', [DocumentRequestController::class, 'resubmit']);
+                Route::post('document-requests/{documentRequest}/cancel', [DocumentRequestController::class, 'cancel']);
+                Route::post('document-requests/{documentRequest}/transition', [DocumentRequestController::class, 'transition']);
+                Route::post('document-requests/{documentRequest}/letter-link', [DocumentRequestController::class, 'letterLink'])
+                    ->middleware('throttle:sensitive');
+            });
 
             // W6: pengumuman dan kegiatan. Baca untuk semua anggota unit, tulis untuk pengurus.
             Route::whereUuid(['unit', 'announcement', 'activity', 'participant'])->group(function () {

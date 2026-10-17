@@ -45,6 +45,13 @@ return [
     // W6: pengumuman dan kegiatan. Semua anggota unit (termasuk warga dan bendahara) membaca yang sudah terbit.
     'community_write_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
 
+    // W7: surat pengantar. Pemrosesan oleh pengurus RT; ketua RW hanya melihat antrean.
+    'document_process_roles' => [Role::SUPER_ADMIN, Role::KETUA_RT, Role::SEKRETARIS],
+    'document_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
+
+    // Masa berlaku tautan cetak surat (berisi NIK) dalam menit.
+    'letter_link_ttl_minutes' => 5,
+
     // Kunci enkripsi NIK/KK (32 byte acak, base64) dan kunci HMAC lookup yang BERBEDA. Lihat App\Services\Pii.
     'pii' => [
         'encryption_key' => env('AKUR_PII_ENCRYPTION_KEY'),

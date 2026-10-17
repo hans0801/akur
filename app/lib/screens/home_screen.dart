@@ -4,6 +4,8 @@ import '../auth/auth_controller.dart';
 import 'admin/pending_users_screen.dart';
 import 'community/activities_screen.dart';
 import 'community/announcements_screen.dart';
+import 'documents/document_queue_screen.dart';
+import 'documents/document_requests_screen.dart';
 import 'population/population_home_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -40,7 +42,7 @@ class HomeScreen extends StatelessWidget {
                 for (final m in user.memberships) Chip(label: Text('${m.roleName} · ${m.unit.name}')),
               ],
             ),
-            if (linking.isNotEmpty || user.populationMemberships.isNotEmpty) ...[
+            if (linking.isNotEmpty || user.populationMemberships.isNotEmpty || user.documentQueueUnits.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text('Pengurus', style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
@@ -54,6 +56,18 @@ class HomeScreen extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => PopulationHomeScreen(api: auth.api, user: user)),
+                  ),
+                ),
+              ),
+            if (user.documentQueueUnits.isNotEmpty)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.inbox_outlined),
+                  title: const Text('Antrean surat'),
+                  subtitle: const Text('Tinjau dan terbitkan surat pengantar'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => DocumentQueueScreen(api: auth.api, units: user.documentQueueUnits)),
                   ),
                 ),
               ),
@@ -97,11 +111,21 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.description_outlined),
+                title: const Text('Surat pengantar'),
+                subtitle: const Text('Ajukan dan cetak surat dari RT'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => DocumentRequestsScreen(api: auth.api)),
+                ),
+              ),
+            ),
             const SizedBox(height: 24),
             Text('Segera hadir', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             for (final f in const [
-              (Icons.description_outlined, 'Surat pengantar'),
               (Icons.payments_outlined, 'Iuran & pembayaran'),
               (Icons.account_balance_wallet_outlined, 'Kas & laporan'),
             ])
