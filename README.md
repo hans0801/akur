@@ -44,7 +44,12 @@ memverifikasi/menolak atau mencatat tunai; pembayaran terverifikasi otomatis mas
 Ketua RT/RW melihat rincian. Rekonsiliasi cache `amount_paid`: `php artisan akur:reconcile-dues [--fix]`.
 Belum: unggah bukti transfer, payment gateway.
 
-Belum: kas (W9),
+Selesai W9: buku kas per unit (kategori bawaan, pemasukan/pengeluaran manual, pembalikan; baris kas
+*append-only* dijaga trigger DB), refund pembayaran iuran (membalik pemasukan dan membuka lagi tagihan),
+laporan bulanan & tahunan agregat yang terbuka untuk semua warga unit (rincian transaksi hanya pengurus keuangan).
+Batas bulan laporan memakai `AKUR_REPORT_TIMEZONE` (bawaan Asia/Jakarta). Belum: unggah nota/kuitansi, ekspor CSV/PDF.
+
+Belum:
 enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
 
 ## Menjalankan lokal

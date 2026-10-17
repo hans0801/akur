@@ -50,6 +50,9 @@ return [
     'finance_write_roles' => [Role::SUPER_ADMIN, Role::BENDAHARA],
     'finance_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::BENDAHARA],
 
+    // Batas bulan pada laporan kas mengikuti waktu setempat, bukan UTC.
+    'report_timezone' => env('AKUR_REPORT_TIMEZONE', 'Asia/Jakarta'),
+
     // W7: surat pengantar. Pemrosesan oleh pengurus RT; ketua RW hanya melihat antrean.
     'document_process_roles' => [Role::SUPER_ADMIN, Role::KETUA_RT, Role::SEKRETARIS],
     'document_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],

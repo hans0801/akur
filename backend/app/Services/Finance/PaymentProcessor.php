@@ -3,6 +3,7 @@
 namespace App\Services\Finance;
 
 use App\Models\DuesAssessment;
+use App\Models\FinanceTransaction;
 use App\Models\Household;
 use App\Models\Payment;
 use App\Models\PaymentAllocation;
@@ -121,6 +122,34 @@ class PaymentProcessor
                 $payment->id,
             );
         }
+    }
+
+    /**
+     * Pembayaran terverifikasi ternyata salah/dikembalikan: kurangi amount_paid dan balik pemasukan kasnya.
+     * Pembayaran dan transaksi asal tetap tersimpan sebagai jejak.
+     */
+    public function refund(Payment $payment, User $actor, string $reason): void
+    {
+        $payment = Payment::query()->lockForUpdate()->findOrFail($payment->id);
+        abort_if($payment->status !== Payment::VERIFIED, 409, 'Hanya pembayaran terverifikasi yang dapat dikembalikan.');
+
+        foreach ($payment->allocations as $allocation) {
+            $assessment = DuesAssessment::query()->lockForUpdate()->findOrFail($allocation->dues_assessment_id);
+            $assessment->amount_paid = max($assessment->amount_paid - $allocation->amount, 0);
+            $assessment->refreshStatus();
+            $assessment->save();
+        }
+
+        FinanceTransaction::query()
+            ->where('reference_type', 'payment')
+            ->where('reference_id', $payment->id)
+            ->where('kind', FinanceTransaction::INCOME)
+            ->whereDoesntHave('reversal')
+            ->lockForUpdate()
+            ->get()
+            ->each(fn (FinanceTransaction $t) => $this->ledger->reverse($t, "Pengembalian pembayaran: {$reason}", $actor));
+
+        $payment->fill(['status' => Payment::REFUNDED, 'rejection_reason' => $reason])->save();
     }
 
     public function reject(Payment $payment, User $actor, string $reason): void

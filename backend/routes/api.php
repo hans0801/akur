@@ -8,8 +8,10 @@ use App\Http\Controllers\Community\ActivityController;
 use App\Http\Controllers\Community\AnnouncementController;
 use App\Http\Controllers\Documents\DocumentRequestController;
 use App\Http\Controllers\Documents\LetterController;
+use App\Http\Controllers\Finance\CashbookController;
 use App\Http\Controllers\Finance\DuesController;
 use App\Http\Controllers\Finance\PaymentController;
+use App\Http\Controllers\Finance\ReportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Population\HouseController;
 use App\Http\Controllers\Population\HouseholdController;
@@ -61,6 +63,19 @@ Route::prefix('v1')->group(function () {
                 Route::post('units/{unit}/payments', [PaymentController::class, 'recordCash'])->middleware('throttle:sensitive');
                 Route::post('payments/{payment}/verify', [PaymentController::class, 'verify']);
                 Route::post('payments/{payment}/reject', [PaymentController::class, 'reject']);
+                Route::post('payments/{payment}/refund', [PaymentController::class, 'refund']);
+            });
+
+            // W9: buku kas dan laporan. Laporan agregat terbuka bagi anggota unit; rincian hanya pengurus keuangan.
+            Route::whereUuid(['unit', 'financeCategory', 'financeTransaction'])->group(function () {
+                Route::get('units/{unit}/finance-categories', [CashbookController::class, 'categories']);
+                Route::post('units/{unit}/finance-categories', [CashbookController::class, 'storeCategory']);
+                Route::patch('finance-categories/{financeCategory}', [CashbookController::class, 'updateCategory']);
+                Route::get('units/{unit}/finance-transactions', [CashbookController::class, 'transactions']);
+                Route::post('units/{unit}/finance-transactions', [CashbookController::class, 'store'])->middleware('throttle:sensitive');
+                Route::post('finance-transactions/{financeTransaction}/reverse', [CashbookController::class, 'reverse']);
+                Route::get('units/{unit}/finance-reports/monthly', [ReportController::class, 'monthly']);
+                Route::get('units/{unit}/finance-reports/yearly', [ReportController::class, 'yearly']);
             });
 
             // W7: surat pengantar. Pemohon = pemilik akun; pengurus memproses di unitnya.

@@ -184,6 +184,23 @@ class PaymentController extends FinanceController
         return response()->json(['data' => $this->present($payment->refresh()->load('allocations.assessment.period.duesType'))]);
     }
 
+    public function refund(Request $request, Payment $payment, PaymentProcessor $processor): JsonResponse
+    {
+        $this->authorizeWrite($request, $payment->household?->unit);
+        $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
+
+        DB::transaction(function () use ($request, $payment, $processor, $data) {
+            $processor->refund($payment, $request->user(), $data['reason']);
+            $this->audit->log('payment.refunded', 'payment', $payment->id, $payment->household->unit_id, [
+                'amount' => $payment->amount,
+                'reason' => $data['reason'],
+            ]);
+        });
+        $this->notifyPayer($payment, 'payment.refunded', 'Pembayaran iuran dibatalkan/dikembalikan');
+
+        return response()->json(['data' => $this->present($payment->refresh()->load('allocations.assessment.period.duesType'))]);
+    }
+
     /** @return array<string, mixed> */
     private function validatePayment(Request $request): array
     {

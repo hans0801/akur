@@ -6,7 +6,9 @@ import 'community/activities_screen.dart';
 import 'community/announcements_screen.dart';
 import 'documents/document_queue_screen.dart';
 import 'documents/document_requests_screen.dart';
+import 'finance/cashbook_screen.dart';
 import 'finance/dues_admin_screen.dart';
+import 'finance/finance_report_screen.dart';
 import 'finance/my_dues_screen.dart';
 import 'finance/payment_queue_screen.dart';
 import 'population/population_home_screen.dart';
@@ -71,6 +73,17 @@ class HomeScreen extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => DuesAdminScreen(api: auth.api, user: user)),
+                  ),
+                ),
+              ),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.account_balance_wallet_outlined),
+                  title: const Text('Buku kas'),
+                  subtitle: const Text('Saldo, pemasukan, dan pengeluaran'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => CashbookScreen(api: auth.api, user: user)),
                   ),
                 ),
               ),
@@ -161,15 +174,17 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ),
               ),
-            const SizedBox(height: 24),
-            Text('Segera hadir', style: theme.textTheme.titleMedium),
-            const SizedBox(height: 8),
-            for (final f in const [
-              (Icons.account_balance_wallet_outlined, 'Kas & laporan'),
-            ])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(child: ListTile(leading: Icon(f.$1), title: Text(f.$2), enabled: false)),
+            if (user.memberships.isNotEmpty)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.bar_chart_outlined),
+                  title: const Text('Laporan kas'),
+                  subtitle: const Text('Transparansi keuangan RT/RW'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => FinanceReportScreen(api: auth.api, units: reportUnits(user))),
+                  ),
+                ),
               ),
           ],
         ),
