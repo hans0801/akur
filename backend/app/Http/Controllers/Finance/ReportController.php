@@ -6,6 +6,7 @@ use App\Models\AdministrativeUnit;
 use App\Models\DuesAssessment;
 use App\Models\DuesPeriod;
 use App\Services\Finance\Ledger;
+use App\Services\Reports\OperationalReports;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\JsonResponse;
@@ -65,6 +66,19 @@ class ReportController extends FinanceController
             'closing_balance' => $opening + $income->sum('amount') - $expense->sum('amount'),
             'dues' => $this->duesSummary($unit, $start, $end),
         ];
+    }
+
+    /** FR-11: laporan operasional (tunggakan, pembayaran, surat, kegiatan) untuk pengurus yang berhak. */
+    public function operational(Request $request, AdministrativeUnit $unit, string $type, OperationalReports $reports): JsonResponse
+    {
+        abort_unless(in_array($type, OperationalReports::TYPES, true), 404);
+        $this->access->authorize($request->user(), $unit, OperationalReports::roles($type));
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
+
+        $tz = config('akur.report_timezone');
+        $start = CarbonImmutable::createFromFormat('Y-m', $data['month'] ?? now($tz)->format('Y-m'), $tz)->startOfMonth();
+
+        return response()->json(['data' => $reports->build($type, $unit, $start)]);
     }
 
     /** Ringkasan per bulan dalam satu tahun untuk grafik/transparansi. */

@@ -10,6 +10,7 @@ import 'finance/cashbook_screen.dart';
 import 'finance/dues_admin_screen.dart';
 import 'finance/finance_report_screen.dart';
 import 'finance/my_dues_screen.dart';
+import 'finance/operational_reports_screen.dart';
 import 'finance/payment_queue_screen.dart';
 import 'population/population_home_screen.dart';
 
@@ -61,6 +62,18 @@ class HomeScreen extends StatelessWidget {
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(builder: (_) => PopulationHomeScreen(api: auth.api, user: user)),
+                  ),
+                ),
+              ),
+            if (OperationalReportsScreen.unitsFor(user).isNotEmpty)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.table_chart_outlined),
+                  title: const Text('Laporan pengurus'),
+                  subtitle: const Text('Tunggakan, pembayaran, surat, kegiatan'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => OperationalReportsScreen(api: auth.api, user: user)),
                   ),
                 ),
               ),

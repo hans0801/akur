@@ -20,6 +20,7 @@ use App\Http\Controllers\Population\HouseholdController;
 use App\Http\Controllers\Population\ResidentController;
 use App\Http\Controllers\Population\ResidentMovementController;
 use App\Http\Controllers\Population\StreetController;
+use App\Services\Reports\OperationalReports;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -94,6 +95,8 @@ Route::prefix('v1')->group(function () {
                 Route::get('units/{unit}/finance-reports/monthly', [ReportController::class, 'monthly']);
                 Route::get('units/{unit}/finance-reports/yearly', [ReportController::class, 'yearly']);
                 Route::post('units/{unit}/finance-reports/export-link', [ReportExportController::class, 'link'])->middleware('throttle:sensitive');
+                // FR-11: laporan operasional per unit/bulan (ekspor lewat export-link dengan `report`).
+                Route::get('units/{unit}/reports/{type}', [ReportController::class, 'operational'])->whereIn('type', OperationalReports::TYPES);
             });
 
             // W7: surat pengantar. Pemohon = pemilik akun; pengurus memproses di unitnya.

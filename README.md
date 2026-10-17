@@ -51,6 +51,8 @@ Selesai W9: buku kas per unit (kategori bawaan, pemasukan/pengeluaran manual, pe
 laporan bulanan & tahunan agregat yang terbuka untuk semua warga unit (rincian transaksi hanya pengurus keuangan).
 Batas bulan laporan memakai `AKUR_REPORT_TIMEZONE` (bawaan Asia/Jakarta). Ekspor laporan (CSV transaksi dan versi
 cetak/PDF) lewat tautan bertanda tangan 5 menit, khusus pengurus keuangan.
+Laporan pengurus FR-11 per unit/bulan: tunggakan, pembayaran (keuangan), status surat (sekretaris/ketua),
+partisipasi kegiatan (pengurus), masing-masing dengan ekspor CSV/cetak hanya untuk peran yang berhak.
 
 
 Selesai W10 (penyelesaian UI): seluruh UI dan pesan API berbahasa Indonesia (pemilih tanggal, pesan validasi
