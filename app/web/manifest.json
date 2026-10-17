@@ -3,9 +3,9 @@
     "short_name": "AKUR",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#B85C38",
+    "background_color": "#FFFFFF",
     "theme_color": "#B85C38",
-    "description": "A new Flutter project.",
+    "description": "Administrasi RT/RW: data warga, surat pengantar, iuran, kas, dan pengumuman.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
