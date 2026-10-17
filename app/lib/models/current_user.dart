@@ -53,6 +53,10 @@ class CurrentUser {
 
   static const linkingRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
 
+  /// Sama dengan config akur.population_*_roles di backend (FR-04).
+  static const populationReadRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
+  static const populationWriteRoles = {'super_admin', 'ketua_rt', 'sekretaris'};
+
   final String id;
   final String displayName;
   final String? email;
@@ -66,4 +70,11 @@ class CurrentUser {
   /// Hanya untuk menampilkan menu. Otorisasi sebenarnya selalu di server.
   List<Membership> get linkingMemberships =>
       memberships.where((m) => linkingRoles.contains(m.role)).toList();
+
+  List<Membership> get populationMemberships =>
+      memberships.where((m) => populationReadRoles.contains(m.role)).toList();
+
+  /// Hanya untuk menampilkan tombol ubah. Server tetap memeriksa peran dan cakupan unit.
+  bool canWritePopulation(String unitId) =>
+      memberships.any((m) => populationWriteRoles.contains(m.role) && m.unit.id == unitId);
 }

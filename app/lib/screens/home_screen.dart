@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../auth/auth_controller.dart';
 import 'admin/pending_users_screen.dart';
+import 'population/population_home_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key, required this.auth});
@@ -37,10 +38,24 @@ class HomeScreen extends StatelessWidget {
                 for (final m in user.memberships) Chip(label: Text('${m.roleName} · ${m.unit.name}')),
               ],
             ),
-            if (linking.isNotEmpty) ...[
+            if (linking.isNotEmpty || user.populationMemberships.isNotEmpty) ...[
               const SizedBox(height: 24),
               Text('Pengurus', style: theme.textTheme.titleMedium),
               const SizedBox(height: 8),
+            ],
+            if (user.populationMemberships.isNotEmpty)
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.people_alt_outlined),
+                  title: const Text('Data warga'),
+                  subtitle: const Text('Keluarga, warga, mutasi, jalan & rumah'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => PopulationHomeScreen(api: auth.api, user: user)),
+                  ),
+                ),
+              ),
+            if (linking.isNotEmpty) ...[
               Card(
                 child: ListTile(
                   leading: const Icon(Icons.how_to_reg_outlined),

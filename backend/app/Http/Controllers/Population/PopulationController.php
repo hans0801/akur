@@ -52,6 +52,6 @@ abstract class PopulationController extends Controller
 
     protected static function like(string $q): string
     {
-        return '%'.addcslashes($q, '%_\').'%';
+        return '%'.addcslashes($q, '%_\\').'%';
     }
 }

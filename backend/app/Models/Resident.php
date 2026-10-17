@@ -54,4 +54,18 @@ class Resident extends Model
     {
         return $this->hasMany(ResidentMovement::class);
     }
+
+    public function isActiveMember(): bool
+    {
+        return $this->is_alive && $this->residency_status !== self::STATUS_MOVED_OUT;
+    }
+
+    /** Lepas status kepala keluarga (sebelum pindah/meninggal). Simpan model setelahnya. */
+    public function releaseHeadship(): void
+    {
+        if ($this->household_id !== null) {
+            Household::query()->whereKey($this->household_id)->where('head_resident_id', $this->id)->update(['head_resident_id' => null]);
+        }
+        $this->is_household_head = false;
+    }
 }

@@ -29,8 +29,8 @@ return Application::configure(basePath: dirname(__DIR__))
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
 
-        // Jangan pernah melaporkan token/ID token ke log.
-        $exceptions->dontFlash(['id_token', 'token']);
+        // Jangan pernah melaporkan token/ID token maupun NIK/KK ke log atau session flash.
+        $exceptions->dontFlash(['id_token', 'token', 'nik', 'kk_number']);
 
         $exceptions->render(fn (AuthorizationException $e, Request $request) => $request->is('api/*')
             ? response()->json(['message' => $e->getMessage() ?: 'Akses ditolak.'], 403)
