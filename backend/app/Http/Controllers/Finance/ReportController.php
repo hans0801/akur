@@ -19,13 +19,25 @@ use Illuminate\Support\Facades\DB;
 class ReportController extends FinanceController
 {
     /** Laporan bulanan: saldo awal, pemasukan/pengeluaran per kategori, saldo akhir, rekap iuran bulan itu. */
-    public function monthly(Request $request, AdministrativeUnit $unit, Ledger $ledger): JsonResponse
+    public function monthly(Request $request, AdministrativeUnit $unit): JsonResponse
     {
         $this->ensureMember($request, $unit);
         $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']]);
 
         $tz = config('akur.report_timezone');
         $start = CarbonImmutable::createFromFormat('Y-m', $data['month'] ?? now($tz)->format('Y-m'), $tz)->startOfMonth();
+
+        return response()->json(['data' => $this->buildMonthly($unit, $start)]);
+    }
+
+    /**
+     * Isi laporan bulanan (dipakai JSON dan versi cetak).
+     *
+     * @return array<string, mixed>
+     */
+    public function buildMonthly(AdministrativeUnit $unit, CarbonImmutable $start): array
+    {
+        $ledger = app(Ledger::class);
         $end = $start->addMonth();
 
         $rows = DB::table('finance_transactions as ft')
@@ -42,17 +54,17 @@ class ReportController extends FinanceController
         $expense = $rows->where('kind', 'expense')->map(fn ($r) => ['category' => $r->name, 'amount' => -(int) $r->net])->values();
         $opening = $ledger->balance([$unit->id], $start->utc());
 
-        return response()->json(['data' => [
+        return [
             'unit' => ['id' => $unit->id, 'name' => $unit->name],
             'month' => $start->format('Y-m'),
             'opening_balance' => $opening,
-            'income' => $income,
-            'expense' => $expense,
+            'income' => $income->all(),
+            'expense' => $expense->all(),
             'total_income' => $income->sum('amount'),
             'total_expense' => $expense->sum('amount'),
             'closing_balance' => $opening + $income->sum('amount') - $expense->sum('amount'),
             'dues' => $this->duesSummary($unit, $start, $end),
-        ]]);
+        ];
     }
 
     /** Ringkasan per bulan dalam satu tahun untuk grafik/transparansi. */

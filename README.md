@@ -47,7 +47,8 @@ Belum: unggah bukti transfer, payment gateway.
 Selesai W9: buku kas per unit (kategori bawaan, pemasukan/pengeluaran manual, pembalikan; baris kas
 *append-only* dijaga trigger DB), refund pembayaran iuran (membalik pemasukan dan membuka lagi tagihan),
 laporan bulanan & tahunan agregat yang terbuka untuk semua warga unit (rincian transaksi hanya pengurus keuangan).
-Batas bulan laporan memakai `AKUR_REPORT_TIMEZONE` (bawaan Asia/Jakarta). Belum: unggah nota/kuitansi, ekspor CSV/PDF.
+Batas bulan laporan memakai `AKUR_REPORT_TIMEZONE` (bawaan Asia/Jakarta). Ekspor laporan (CSV transaksi dan versi
+cetak/PDF) lewat tautan bertanda tangan 5 menit, khusus pengurus keuangan. Belum: unggah nota/kuitansi.
 
 Belum:
 enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.

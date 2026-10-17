@@ -12,6 +12,7 @@ use App\Http\Controllers\Finance\CashbookController;
 use App\Http\Controllers\Finance\DuesController;
 use App\Http\Controllers\Finance\PaymentController;
 use App\Http\Controllers\Finance\ReportController;
+use App\Http\Controllers\Finance\ReportExportController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Population\HouseController;
 use App\Http\Controllers\Population\HouseholdController;
@@ -28,6 +29,12 @@ Route::prefix('v1')->group(function () {
         ->whereUuid('documentRequest')
         ->middleware(['signed', 'throttle:sensitive'])
         ->name('documents.letter');
+
+    // Ekspor laporan kas (CSV / siap cetak) lewat tautan bertanda tangan berumur pendek.
+    Route::get('finance-exports/{unit}', [ReportExportController::class, 'download'])
+        ->whereUuid('unit')
+        ->middleware(['signed', 'throttle:sensitive'])
+        ->name('finance.export');
 
     // Terautentikasi — termasuk akun pending.
     Route::middleware(['auth:api', 'throttle:api'])->group(function () {
@@ -76,6 +83,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('finance-transactions/{financeTransaction}/reverse', [CashbookController::class, 'reverse']);
                 Route::get('units/{unit}/finance-reports/monthly', [ReportController::class, 'monthly']);
                 Route::get('units/{unit}/finance-reports/yearly', [ReportController::class, 'yearly']);
+                Route::post('units/{unit}/finance-reports/export-link', [ReportExportController::class, 'link'])->middleware('throttle:sensitive');
             });
 
             // W7: surat pengantar. Pemohon = pemilik akun; pengurus memproses di unitnya.

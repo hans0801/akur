@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../api/api_client.dart';
 import '../../models/current_user.dart';
@@ -7,10 +8,13 @@ import 'finance_common.dart';
 
 /// Laporan kas bulanan (agregat) untuk semua anggota unit: saldo awal/akhir, total per kategori, rekap iuran.
 class FinanceReportScreen extends StatefulWidget {
-  const FinanceReportScreen({super.key, required this.api, required this.units});
+  const FinanceReportScreen({super.key, required this.api, required this.units, this.exportUnitIds = const {}});
 
   final ApiClient api;
   final List<UnitRef> units;
+
+  /// Unit yang boleh diekspor pengguna (peran keuangan); server tetap memeriksa.
+  final Set<String> exportUnitIds;
 
   @override
   State<FinanceReportScreen> createState() => _FinanceReportScreenState();
@@ -26,6 +30,19 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
   Future<Map<String, dynamic>> _load() async =>
       (await widget.api.get('/units/${_unit.id}/finance-reports/monthly?month=$_monthCode'))['data'] as Map<String, dynamic>;
 
+  Future<void> _export(String format) async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final json = await widget.api.post('/units/${_unit.id}/finance-reports/export-link', {'format': format, 'month': _monthCode});
+      final url = Uri.parse((json['data'] as Map<String, dynamic>)['url'] as String);
+      if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        messenger.showSnackBar(const SnackBar(content: Text('Tidak dapat membuka browser.')));
+      }
+    } on ApiException catch (e) {
+      messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    }
+  }
+
   void _shift(int months) => setState(() {
         _month = DateTime(_month.year, _month.month + months);
         _data = _load();
@@ -36,7 +53,21 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
     final theme = Theme.of(context);
     final isCurrent = _month.year == DateTime.now().year && _month.month == DateTime.now().month;
     return Scaffold(
-      appBar: AppBar(title: const Text('Laporan kas')),
+      appBar: AppBar(
+        title: const Text('Laporan kas'),
+        actions: [
+          if (widget.exportUnitIds.contains(_unit.id))
+            PopupMenuButton<String>(
+              tooltip: 'Ekspor',
+              icon: const Icon(Icons.download_outlined),
+              onSelected: _export,
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'html', child: Text('Cetak / simpan PDF')),
+                PopupMenuItem(value: 'csv', child: Text('Unduh CSV transaksi')),
+              ],
+            ),
+        ],
+      ),
       body: Column(children: [
         UnitDropdown(units: widget.units, value: _unit, onChanged: (u) => setState(() {
               _unit = u;

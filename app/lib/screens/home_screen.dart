@@ -182,7 +182,11 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Transparansi keuangan RT/RW'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => FinanceReportScreen(api: auth.api, units: reportUnits(user))),
+                    MaterialPageRoute(builder: (_) => FinanceReportScreen(
+                      api: auth.api,
+                      units: reportUnits(user),
+                      exportUnitIds: {for (final u in user.financeUnits) u.id},
+                    )),
                   ),
                 ),
               ),

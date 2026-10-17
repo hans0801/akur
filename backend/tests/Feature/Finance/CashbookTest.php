@@ -129,6 +129,31 @@ class CashbookTest extends TestCase
         $this->assertSame(0, FinanceTransaction::query()->count());
     }
 
+    public function test_export_links_produce_csv_and_printable_report(): void
+    {
+        ['rt1' => $rt] = $this->unitTree();
+        $headers = $this->bearerFor($this->userWithRole($rt, Role::BENDAHARA));
+        $income = $this->category($rt, 'income', 'Donasi');
+        $at = now('Asia/Jakarta')->startOfMonth()->addSecond();
+        $this->postJson("/api/v1/units/{$rt->id}/finance-transactions", [
+            'category_id' => $income->id, 'amount' => 75000, 'occurred_at' => $at->toIso8601String(), 'description' => '=HYPERLINK("x")',
+        ], $headers)->assertCreated();
+        $month = $at->format('Y-m');
+
+        $csvUrl = $this->postJson("/api/v1/units/{$rt->id}/finance-reports/export-link", ['format' => 'csv', 'month' => $month], $headers)->assertOk()->json('data.url');
+        $csv = $this->get($csvUrl)->assertOk()->streamedContent();
+        $this->assertStringContainsString('Donasi', $csv);
+        $this->assertStringContainsString("'=HYPERLINK", $csv);
+        $this->assertStringContainsString('75000', $csv);
+
+        $htmlUrl = $this->postJson("/api/v1/units/{$rt->id}/finance-reports/export-link", ['format' => 'html', 'month' => $month], $headers)->json('data.url');
+        $this->get($htmlUrl)->assertOk()->assertSee('Rp 75.000');
+
+        $this->get($csvUrl.'x')->assertForbidden();
+        $this->postJson("/api/v1/units/{$rt->id}/finance-reports/export-link", ['format' => 'csv', 'month' => $month], $this->bearerFor($this->userWithRole($rt, Role::WARGA)))
+            ->assertForbidden();
+    }
+
     public function test_dues_income_category_cannot_be_renamed(): void
     {
         ['rt1' => $rt] = $this->unitTree();
