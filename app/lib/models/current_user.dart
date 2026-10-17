@@ -57,6 +57,9 @@ class CurrentUser {
   static const populationReadRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
   static const populationWriteRoles = {'super_admin', 'ketua_rt', 'sekretaris'};
 
+  /// Sama dengan config akur.community_write_roles (pengumuman & kegiatan).
+  static const communityWriteRoles = {'super_admin', 'ketua_rw', 'ketua_rt', 'sekretaris'};
+
   final String id;
   final String displayName;
   final String? email;
@@ -77,4 +80,9 @@ class CurrentUser {
   /// Hanya untuk menampilkan tombol ubah. Server tetap memeriksa peran dan cakupan unit.
   bool canWritePopulation(String unitId) =>
       memberships.any((m) => populationWriteRoles.contains(m.role) && m.unit.id == unitId);
+
+  /// Unit tempat pengguna boleh membuat pengumuman/kegiatan (hanya untuk menampilkan tombol).
+  List<UnitRef> get communityManageUnits => {
+        for (final m in memberships.where((m) => communityWriteRoles.contains(m.role))) m.unit.id: m.unit,
+      }.values.toList();
 }

@@ -84,6 +84,49 @@ class UnitAccess
     }
 
     /**
+     * Unit yang kontennya (pengumuman/kegiatan) boleh dibaca pengguna dengan peran apa pun:
+     * unit keanggotaannya, RW induknya, dan — untuk keanggotaan RW — semua RT di bawahnya.
+     *
+     * @return list<string>
+     */
+    public function visibleUnitIds(User $user): array
+    {
+        if ($user->account_status !== User::STATUS_ACTIVE) {
+            return [];
+        }
+
+        $direct = UserMembership::query()->effective()->where('user_id', $user->id)->pluck('unit_id')->unique()->all();
+        if ($direct === []) {
+            return [];
+        }
+
+        $units = AdministrativeUnit::query()->whereIn('id', $direct)->get(['id', 'parent_unit_id']);
+        $children = AdministrativeUnit::query()->whereIn('parent_unit_id', $direct)->pluck('id')->all();
+
+        return array_values(array_unique(array_filter([
+            ...$direct,
+            ...$units->pluck('parent_unit_id')->all(),
+            ...$children,
+        ])));
+    }
+
+    /**
+     * Pengguna aktif yang menjadi anggota unit (untuk RW: termasuk anggota RT di bawahnya). Penerima notifikasi.
+     *
+     * @return list<string>
+     */
+    public function memberUserIds(AdministrativeUnit $unit): array
+    {
+        return UserMembership::query()
+            ->effective()
+            ->whereIn('unit_id', $unit->selfAndDescendantIds())
+            ->whereHas('user', fn ($q) => $q->where('account_status', User::STATUS_ACTIVE))
+            ->distinct()
+            ->pluck('user_id')
+            ->all();
+    }
+
+    /**
      * Peran yang boleh diberikan pengguna pada unit tertentu (matriks config akur.grantable_roles).
      *
      * @return list<string>

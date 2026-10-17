@@ -29,7 +29,11 @@ Selesai W5 (FR-04): CRUD jalan, rumah, keluarga (KK), warga, dan mutasi per RT/R
 (`App\Services\Pii\PiiCipher`, kunci `AKUR_PII_ENCRYPTION_KEY` + `AKUR_PII_LOOKUP_KEY`), selalu dimasking,
 tampil utuh hanya lewat endpoint *reveal* yang diaudit. Perubahan alamat/status selalu dicatat sebagai mutasi.
 
-Belum: pengumuman/kegiatan (W6), surat (W7), iuran (W8), kas (W9),
+Selesai W6: pengumuman (draf/terbit/arsip, jadwal tayang & kedaluwarsa) dan kegiatan (RSVP, check-in) per RT/RW.
+Warga RT melihat konten RT-nya dan RW induknya; pengurus (super_admin, ketua_rw, ketua_rt, sekretaris) menulis.
+Notifikasi in-app saat terbit/dibuat/dibatalkan. Belum: notifikasi untuk pengumuman terjadwal, foto kegiatan.
+
+Belum: surat (W7), iuran (W8), kas (W9),
 enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
 
 ## Menjalankan lokal

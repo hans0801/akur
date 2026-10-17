@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../auth/auth_controller.dart';
 import 'admin/pending_users_screen.dart';
+import 'community/activities_screen.dart';
+import 'community/announcements_screen.dart';
 import 'population/population_home_screen.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -71,10 +73,34 @@ class HomeScreen extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 24),
+            Text('Warga', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 8),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.campaign_outlined),
+                title: const Text('Pengumuman'),
+                subtitle: const Text('Info terbaru dari RT/RW'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => AnnouncementsScreen(api: auth.api, user: user)),
+                ),
+              ),
+            ),
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.event_outlined),
+                title: const Text('Kegiatan'),
+                subtitle: const Text('Agenda warga dan konfirmasi kehadiran'),
+                trailing: const Icon(Icons.chevron_right),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => ActivitiesScreen(api: auth.api, user: user)),
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
             Text('Segera hadir', style: theme.textTheme.titleMedium),
             const SizedBox(height: 8),
             for (final f in const [
-              (Icons.campaign_outlined, 'Pengumuman & kegiatan'),
               (Icons.description_outlined, 'Surat pengantar'),
               (Icons.payments_outlined, 'Iuran & pembayaran'),
               (Icons.account_balance_wallet_outlined, 'Kas & laporan'),

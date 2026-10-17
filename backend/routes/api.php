@@ -4,6 +4,8 @@ use App\Http\Controllers\Admin\MembershipController;
 use App\Http\Controllers\Admin\PendingUserController;
 use App\Http\Controllers\Auth\GoogleLoginController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Community\ActivityController;
+use App\Http\Controllers\Community\AnnouncementController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\Population\HouseController;
 use App\Http\Controllers\Population\HouseholdController;
@@ -29,6 +31,22 @@ Route::prefix('v1')->group(function () {
         // Hanya akun aktif (sudah ditautkan/diverifikasi).
         Route::middleware('account.active')->group(function () {
             Route::get('units/{unit}/memberships', [MembershipController::class, 'index'])->whereUuid('unit');
+
+            // W6: pengumuman dan kegiatan. Baca untuk semua anggota unit, tulis untuk pengurus.
+            Route::whereUuid(['unit', 'announcement', 'activity', 'participant'])->group(function () {
+                Route::get('announcements', [AnnouncementController::class, 'feed']);
+                Route::get('units/{unit}/announcements', [AnnouncementController::class, 'index']);
+                Route::post('units/{unit}/announcements', [AnnouncementController::class, 'store']);
+                Route::get('announcements/{announcement}', [AnnouncementController::class, 'show']);
+                Route::patch('announcements/{announcement}', [AnnouncementController::class, 'update']);
+
+                Route::get('activities', [ActivityController::class, 'index']);
+                Route::post('units/{unit}/activities', [ActivityController::class, 'store']);
+                Route::get('activities/{activity}', [ActivityController::class, 'show']);
+                Route::patch('activities/{activity}', [ActivityController::class, 'update']);
+                Route::put('activities/{activity}/participation', [ActivityController::class, 'participate']);
+                Route::post('activities/{activity}/participants/{participant}/check-in', [ActivityController::class, 'checkIn']);
+            });
 
             // FR-04: data kependudukan, diotorisasi per unit di controller.
             Route::whereUuid(['unit', 'street', 'house', 'household', 'resident'])->group(function () {

@@ -42,6 +42,9 @@ return [
     'population_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
     'population_write_roles' => [Role::SUPER_ADMIN, Role::KETUA_RT, Role::SEKRETARIS],
 
+    // W6: pengumuman dan kegiatan. Semua anggota unit (termasuk warga dan bendahara) membaca yang sudah terbit.
+    'community_write_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
+
     // Kunci enkripsi NIK/KK (32 byte acak, base64) dan kunci HMAC lookup yang BERBEDA. Lihat App\Services\Pii.
     'pii' => [
         'encryption_key' => env('AKUR_PII_ENCRYPTION_KEY'),
