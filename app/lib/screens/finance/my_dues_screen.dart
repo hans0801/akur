@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../community/community_common.dart';
 import '../population/population_common.dart';
 import 'finance_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Tagihan iuran dan riwayat pembayaran keluarga pengguna; lapor pembayaran untuk diverifikasi bendahara.
 class MyDuesScreen extends StatefulWidget {
@@ -47,7 +48,7 @@ class _MyDuesScreenState extends State<MyDuesScreen> {
           future: _data,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-            if (snapshot.hasError) return Center(child: Padding(padding: const EdgeInsets.all(24), child: Text(snapshot.error.toString())));
+            if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
             final (dues, payments) = snapshot.data!;
             final assessments = (dues['assessments'] as List<dynamic>).cast<Map<String, dynamic>>();
             final outstanding = (dues['outstanding_total'] as num).toInt();

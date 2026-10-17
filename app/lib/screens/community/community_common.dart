@@ -65,7 +65,7 @@ class DateTimeField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: required ? '$label *' : label,
           suffixIcon: value != null && !required
-              ? IconButton(icon: const Icon(Icons.clear), onPressed: () => onChanged(null))
+              ? IconButton(tooltip: 'Kosongkan $label', icon: const Icon(Icons.clear), onPressed: () => onChanged(null))
               : const Icon(Icons.schedule),
         ),
         child: Text(value == null ? '-' : formatDateTime(value!.toUtc().toIso8601String())),

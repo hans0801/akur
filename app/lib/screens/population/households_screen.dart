@@ -4,6 +4,7 @@ import 'household_form_screen.dart';
 import 'population_common.dart';
 import 'resident_detail_screen.dart';
 import 'resident_form_screen.dart';
+import '../../widgets/async_view.dart';
 
 /// Daftar keluarga (KK) per unit. No. KK hanya tampil tersamar.
 class HouseholdsScreen extends StatefulWidget {
@@ -76,7 +77,7 @@ class _HouseholdsScreenState extends State<HouseholdsScreen> {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+                if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
                 final items = snapshot.data!;
                 return RefreshIndicator(
                   onRefresh: () async => _reload(),
@@ -181,7 +182,7 @@ class _HouseholdDetailScreenState extends State<HouseholdDetailScreen> {
               : null,
           body: switch (snapshot) {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
-            _ when snapshot.hasError => Center(child: Text(snapshot.error.toString())),
+            _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => RefreshIndicator(
                 onRefresh: () async => _reload(),
                 child: ListView(

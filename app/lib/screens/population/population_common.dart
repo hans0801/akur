@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
+import '../../widgets/async_view.dart';
 import '../../models/current_user.dart';
 
 /// Konteks bersama layar data kependudukan (FR-04): klien API, unit terpilih, dan apakah tombol ubah ditampilkan.
@@ -54,7 +55,7 @@ Future<bool> runApi(BuildContext context, Future<void> Function() action, String
     messenger.showSnackBar(SnackBar(content: Text(success)));
     return true;
   } on ApiException catch (e) {
-    messenger.showSnackBar(SnackBar(content: Text(e.message)));
+    messenger.showSnackBar(SnackBar(content: Text(friendlyError(e))));
     return false;
   }
 }
@@ -111,7 +112,7 @@ Future<void> revealSensitive(BuildContext context, ApiClient api, {required Stri
       ),
     );
   } on ApiException catch (e) {
-    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(friendlyError(e))));
   }
 }
 
@@ -179,7 +180,7 @@ class DateField extends StatelessWidget {
         decoration: InputDecoration(
           labelText: required ? '$label *' : label,
           suffixIcon: value != null && !required
-              ? IconButton(icon: const Icon(Icons.clear), onPressed: () => onChanged(null))
+              ? IconButton(tooltip: 'Kosongkan $label', icon: const Icon(Icons.clear), onPressed: () => onChanged(null))
               : const Icon(Icons.calendar_today_outlined),
         ),
         child: Text(value ?? '-'),

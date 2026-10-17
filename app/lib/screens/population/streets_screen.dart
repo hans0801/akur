@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'population_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Master jalan per unit. Jalan dinonaktifkan, bukan dihapus.
 class StreetsScreen extends StatefulWidget {
@@ -65,7 +66,7 @@ class _StreetsScreenState extends State<StreetsScreen> {
         future: _streets,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+          if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
           final items = snapshot.data!;
           return RefreshIndicator(
             onRefresh: () async => _reload(),
@@ -160,7 +161,7 @@ class _HousesScreenState extends State<HousesScreen> {
         future: _houses,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+          if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
           final items = snapshot.data!;
           return RefreshIndicator(
             onRefresh: () async => _reload(),

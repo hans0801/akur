@@ -5,6 +5,7 @@ import '../../models/current_user.dart';
 import '../population/population_common.dart';
 import 'activity_form_screen.dart';
 import 'community_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Agenda kegiatan RT/RW (akan datang / selesai) dengan konfirmasi kehadiran.
 class ActivitiesScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
               future: _items,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-                if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+                if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
                 final items = snapshot.data!;
                 return RefreshIndicator(
                   onRefresh: () async => _reload(),
@@ -195,7 +196,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           ),
           body: switch (snapshot) {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
-            _ when snapshot.hasError => Center(child: Text(snapshot.error.toString())),
+            _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => RefreshIndicator(
                 onRefresh: () async => _reload(),
                 child: ListView(

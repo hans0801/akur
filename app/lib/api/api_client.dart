@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -32,6 +33,12 @@ class ApiClient {
             );
 
   static const _tokenKey = 'akur_session_token';
+
+  /// Batas waktu per request agar layar tidak memutar indikator tanpa akhir di jaringan lambat.
+  static const timeout = Duration(seconds: 20);
+
+  /// Dipanggil saat API membalas 401 di luar alur login (diatur oleh AuthController).
+  VoidCallback? onUnauthorized;
 
   final http.Client _client;
   final FlutterSecureStorage _storage;
@@ -69,9 +76,25 @@ class ApiClient {
 
     if (body != null) request.body = jsonEncode(body);
 
-    final response = await http.Response.fromStream(await _client.send(request));
-    final decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(await _client.send(request).timeout(timeout)).timeout(timeout);
+    } on TimeoutException {
+      throw ApiException(0, 'Server tidak merespons. Periksa koneksi internet Anda lalu coba lagi.');
+    } catch (_) {
+      throw ApiException(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+    }
+
+    final Object? decoded;
+    try {
+      decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+    } on FormatException {
+      throw ApiException(response.statusCode, 'Respons server tidak valid (${response.statusCode}). Coba lagi nanti.');
+    }
     final json = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{'data': decoded};
+
+    // Sesi kedaluwarsa/dicabut saat aplikasi terbuka: kembalikan pengguna ke layar login.
+    if (response.statusCode == 401 && path != '/me' && !path.startsWith('/auth/')) onUnauthorized?.call();
 
     if (response.statusCode >= 400) {
       throw ApiException(

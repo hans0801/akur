@@ -5,6 +5,7 @@ import '../../models/current_user.dart';
 import '../population/population_common.dart';
 import 'document_request_detail_screen.dart';
 import 'document_requests_screen.dart';
+import '../../widgets/async_view.dart';
 
 /// Antrean surat pengantar untuk pengurus: yang masih terbuka, atau difilter per status.
 class DocumentQueueScreen extends StatefulWidget {
@@ -63,7 +64,7 @@ class _DocumentQueueScreenState extends State<DocumentQueueScreen> {
               future: _items,
               builder: (context, snapshot) {
                 if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-                if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+                if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
                 return RefreshIndicator(
                   onRefresh: () async => _reload(),
                   child: DocumentRequestList(

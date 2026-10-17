@@ -12,7 +12,9 @@ enum AuthStatus { loading, signedOut, signedIn }
 /// Alur login (PRD §6): Google memberi ID token → backend memverifikasi dan menerbitkan sesi AKUR.
 /// Token Google tidak disimpan dan tidak dipakai untuk memanggil API.
 class AuthController extends ChangeNotifier {
-  AuthController(this.api);
+  AuthController(this.api) {
+    api.onUnauthorized = _sessionExpired;
+  }
 
   final ApiClient api;
   StreamSubscription<GoogleSignInAuthenticationEvent>? _googleEvents;
@@ -104,6 +106,15 @@ class AuthController extends ChangeNotifier {
     if (AppConfig.googleWebClientId.isNotEmpty) await GoogleSignIn.instance.signOut();
     user = null;
     status = AuthStatus.signedOut;
+    notifyListeners();
+  }
+
+  Future<void> _sessionExpired() async {
+    if (status != AuthStatus.signedIn) return;
+    await api.clearToken();
+    user = null;
+    status = AuthStatus.signedOut;
+    error = 'Sesi Anda berakhir. Silakan masuk lagi.';
     notifyListeners();
   }
 

@@ -5,6 +5,7 @@ import '../../models/current_user.dart';
 import '../population/population_common.dart';
 import 'announcement_form_screen.dart';
 import 'community_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Pengumuman yang sedang tayang untuk unit pengguna (RT-nya dan RW induknya).
 /// Pengurus juga bisa membuka daftar kelola (draf, terjadwal, arsip).
@@ -140,7 +141,7 @@ class _AnnouncementList extends StatelessWidget {
       future: future,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-        if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+        if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: onRefresh);
         final items = snapshot.data!;
         return RefreshIndicator(
           onRefresh: () async => onRefresh(),
@@ -194,6 +195,8 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
   Future<Map<String, dynamic>> _load() async =>
       (await widget.api.get('/announcements/${widget.announcementId}'))['data'] as Map<String, dynamic>;
 
+  void _reload() => setState(() => _item = _load());
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -220,7 +223,7 @@ class _AnnouncementDetailScreenState extends State<AnnouncementDetailScreen> {
           ),
           body: switch (snapshot) {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
-            _ when snapshot.hasError => Center(child: Text(snapshot.error.toString())),
+            _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => ListView(
                 padding: const EdgeInsets.all(16),
                 children: [

@@ -5,6 +5,7 @@ import '../../api/api_client.dart';
 import '../../models/current_user.dart';
 import '../population/population_common.dart';
 import 'finance_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Laporan kas bulanan (agregat) untuk semua anggota unit: saldo awal/akhir, total per kategori, rekap iuran.
 class FinanceReportScreen extends StatefulWidget {
@@ -29,6 +30,8 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
 
   Future<Map<String, dynamic>> _load() async =>
       (await widget.api.get('/units/${_unit.id}/finance-reports/monthly?month=$_monthCode'))['data'] as Map<String, dynamic>;
+
+  void _reload() => setState(() => _data = _load());
 
   Future<void> _export(String format) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -74,16 +77,16 @@ class _FinanceReportScreenState extends State<FinanceReportScreen> {
               _data = _load();
             })),
         Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          IconButton(onPressed: () => _shift(-1), icon: const Icon(Icons.chevron_left)),
+          IconButton(tooltip: 'Bulan sebelumnya', onPressed: () => _shift(-1), icon: const Icon(Icons.chevron_left)),
           Text(_monthCode, style: theme.textTheme.titleMedium),
-          IconButton(onPressed: isCurrent ? null : () => _shift(1), icon: const Icon(Icons.chevron_right)),
+          IconButton(tooltip: 'Bulan berikutnya', onPressed: isCurrent ? null : () => _shift(1), icon: const Icon(Icons.chevron_right)),
         ]),
         Expanded(
           child: FutureBuilder<Map<String, dynamic>>(
             future: _data,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+              if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
               final r = snapshot.data!;
               Widget row(String label, num value, {TextStyle? style}) => ListTile(
                     dense: true,

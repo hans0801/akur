@@ -5,6 +5,7 @@ import '../../models/current_user.dart';
 import '../community/community_common.dart';
 import '../population/population_common.dart';
 import 'finance_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Buku kas unit: saldo, rincian transaksi, catat pemasukan/pengeluaran, dan pembalikan (bendahara).
 class CashbookScreen extends StatefulWidget {
@@ -64,7 +65,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
             future: _data,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+              if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
               final items = dataList(snapshot.data!);
               return RefreshIndicator(
                 onRefresh: () async => _reload(),

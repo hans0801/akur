@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'population_common.dart';
 import 'resident_detail_screen.dart';
+import '../../widgets/async_view.dart';
 
 /// Daftar warga per unit dengan pencarian nama, filter status, dan pencarian NIK exact-match (POST, diaudit).
 class ResidentsScreen extends StatefulWidget {
@@ -98,7 +99,7 @@ class _ResidentsScreenState extends State<ResidentsScreen> {
                 if (snapshot.connectionState != ConnectionState.done) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+                if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
                 final items = snapshot.data!;
                 return RefreshIndicator(
                   onRefresh: () async => _reload(),

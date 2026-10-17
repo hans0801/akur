@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../api/api_client.dart';
 import '../../models/current_user.dart';
+import '../../widgets/async_view.dart';
 
 /// Daftar akun pending dan penautan ke data warga (FR-02). Server tetap memvalidasi peran dan cakupan unit.
 class PendingUsersScreen extends StatefulWidget {
@@ -92,7 +93,7 @@ class _PendingUsersScreenState extends State<PendingUsersScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(child: Text(snapshot.error.toString()));
+            return ErrorView(error: snapshot.error, onRetry: _reload);
           }
           final users = snapshot.data!;
           if (users.isEmpty) {

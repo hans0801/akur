@@ -1,0 +1,9 @@
+{
+    "(and :count more error)": "(dan :count kesalahan lain)",
+    "(and :count more errors)": "(dan :count kesalahan lain)",
+    "Unauthenticated.": "Sesi Anda berakhir. Silakan masuk lagi.",
+    "This action is unauthorized.": "Akses ditolak.",
+    "Not Found": "Data tidak ditemukan.",
+    "Too Many Attempts.": "Terlalu banyak permintaan. Coba lagi sebentar lagi.",
+    "Invalid signature.": "Tautan tidak valid atau sudah kedaluwarsa."
+}

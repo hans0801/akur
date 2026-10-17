@@ -6,6 +6,7 @@ import '../population/population_common.dart';
 import 'document_request_detail_screen.dart';
 import 'document_request_form_screen.dart';
 import 'documents_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Surat pengantar milik pengguna: riwayat pengajuan dan tombol ajukan baru.
 class DocumentRequestsScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _DocumentRequestsScreenState extends State<DocumentRequestsScreen> {
         future: _items,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+          if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
           return RefreshIndicator(
             onRefresh: () async => _reload(),
             child: DocumentRequestList(

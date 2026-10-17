@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'movement_form_screen.dart';
 import 'population_common.dart';
 import 'resident_form_screen.dart';
+import '../../widgets/async_view.dart';
 
 /// Biodata warga (NIK tersamar), riwayat mutasi, dan aksi pengurus.
 class ResidentDetailScreen extends StatefulWidget {
@@ -76,7 +77,7 @@ class _ResidentDetailScreenState extends State<ResidentDetailScreen> {
               : null,
           body: switch (snapshot) {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
-            _ when snapshot.hasError => Center(child: Text(snapshot.error.toString())),
+            _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => RefreshIndicator(
                 onRefresh: () async => _reload(),
                 child: ListView(

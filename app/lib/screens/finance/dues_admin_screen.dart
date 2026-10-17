@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../models/current_user.dart';
 import '../population/population_common.dart';
 import 'finance_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Pengelolaan iuran oleh bendahara (ketua RT/RW: lihat saja): jenis iuran → periode → tagihan per keluarga.
 class DuesAdminScreen extends StatefulWidget {
@@ -81,7 +82,7 @@ class _DuesAdminScreenState extends State<DuesAdminScreen> {
             future: _types,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+              if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
               final types = snapshot.data!;
               return RefreshIndicator(
                 onRefresh: () async => _reload(),
@@ -187,7 +188,7 @@ class _PeriodsScreenState extends State<_PeriodsScreen> {
         future: _periods,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-          if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+          if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
           final periods = snapshot.data!;
           return RefreshIndicator(
             onRefresh: () async => _reload(),
@@ -306,7 +307,7 @@ class _PeriodDetailScreenState extends State<PeriodDetailScreen> {
           appBar: AppBar(title: Text(d == null ? 'Periode' : 'Periode ${(d['period'] as Map<String, dynamic>)['period_code']}')),
           body: switch (snapshot) {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
-            _ when snapshot.hasError => Center(child: Text(snapshot.error.toString())),
+            _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => RefreshIndicator(
                 onRefresh: () async => _reload(),
                 child: ListView(

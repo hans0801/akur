@@ -5,6 +5,7 @@ import '../community/community_common.dart';
 import '../population/population_common.dart';
 import 'document_request_form_screen.dart';
 import 'documents_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Detail pengajuan surat. Pemohon: perbaiki/batalkan/buka surat. Pengurus: tinjau, setujui, tolak, terbitkan.
 class DocumentRequestDetailScreen extends StatefulWidget {
@@ -85,7 +86,7 @@ class _DocumentRequestDetailScreenState extends State<DocumentRequestDetailScree
           appBar: AppBar(title: const Text('Pengajuan surat')),
           body: switch (snapshot) {
             _ when snapshot.connectionState != ConnectionState.done => const Center(child: CircularProgressIndicator()),
-            _ when snapshot.hasError => Center(child: Text(snapshot.error.toString())),
+            _ when snapshot.hasError => ErrorView(error: snapshot.error, onRetry: _reload),
             _ => RefreshIndicator(
                 onRefresh: () async => _reload(),
                 child: ListView(

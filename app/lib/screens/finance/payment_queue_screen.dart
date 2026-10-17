@@ -5,6 +5,7 @@ import '../../models/current_user.dart';
 import '../community/community_common.dart';
 import '../population/population_common.dart';
 import 'finance_common.dart';
+import '../../widgets/async_view.dart';
 
 /// Pembayaran yang dilaporkan warga; bendahara memverifikasi (masuk kas) atau menolak dengan alasan.
 class PaymentQueueScreen extends StatefulWidget {
@@ -68,7 +69,7 @@ class _PaymentQueueScreenState extends State<PaymentQueueScreen> {
             future: _items,
             builder: (context, snapshot) {
               if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
-              if (snapshot.hasError) return Center(child: Text(snapshot.error.toString()));
+              if (snapshot.hasError) return ErrorView(error: snapshot.error, onRetry: _reload);
               final items = snapshot.data!;
               return RefreshIndicator(
                 onRefresh: () async => _reload(),

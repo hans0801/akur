@@ -50,6 +50,11 @@ laporan bulanan & tahunan agregat yang terbuka untuk semua warga unit (rincian t
 Batas bulan laporan memakai `AKUR_REPORT_TIMEZONE` (bawaan Asia/Jakarta). Ekspor laporan (CSV transaksi dan versi
 cetak/PDF) lewat tautan bertanda tangan 5 menit, khusus pengurus keuangan. Belum: unggah nota/kuitansi.
 
+
+Selesai W10 (penyelesaian UI): seluruh UI dan pesan API berbahasa Indonesia (pemilih tanggal, pesan validasi
+`backend/lang/id`, 401/404/429/tautan kedaluwarsa tanpa detail internal), tampilan galat seragam dengan "Coba lagi",
+batas waktu request 20 detik + pesan offline, kembali ke login otomatis bila sesi berakhir, lebar konten dibatasi
+di web/tablet, tooltip untuk tombol ikon (pembaca layar). MVP feature freeze.
 Belum:
 enkripsi NIK/KK (desain W11), backup offsite, deploy otomatis.
 
