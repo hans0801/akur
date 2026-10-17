@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../models/current_user.dart';
 import '../community/community_common.dart';
 import '../population/population_common.dart';
+import 'attachments.dart';
 import 'finance_common.dart';
 import '../../widgets/async_view.dart';
 
@@ -90,7 +91,8 @@ class _CashbookScreenState extends State<CashbookScreen> {
                           }),
                           title: Text(t['description'] as String),
                           subtitle: Text('${t['category']?['name'] ?? '-'} · ${formatDateTime(t['occurred_at'] as String)}'
-                              '${t['is_reversed'] == true ? ' · dibalik' : ''}'),
+                              '${t['is_reversed'] == true ? ' · dibalik' : ''}'
+                              '${t['receipt_file_id'] != null ? ' · ada nota' : ''}'),
                           trailing: Text(
                             '${t['kind'] == 'expense' ? '−' : t['kind'] == 'reversal' ? '↺ ' : '+'}${formatRupiah(t['amount'] as num)}',
                             style: TextStyle(
@@ -98,6 +100,7 @@ class _CashbookScreenState extends State<CashbookScreen> {
                               color: t['kind'] == 'expense' ? theme.colorScheme.error : null,
                             ),
                           ),
+                          onTap: t['receipt_file_id'] == null ? null : () => openAttachment(context, widget.api, t['receipt_file_id'] as String),
                           onLongPress: _canWrite && t['kind'] != 'reversal' && t['is_reversed'] != true && t['reference_type'] != 'payment'
                               ? () => _reverse(t)
                               : null,
@@ -137,6 +140,7 @@ class _TransactionFormScreenState extends State<_TransactionFormScreen> {
   String _kind = 'expense';
   String? _categoryId;
   DateTime? _occurredAt = DateTime.now();
+  String? _receiptFileId;
   bool _saving = false;
 
   @override
@@ -157,6 +161,7 @@ class _TransactionFormScreenState extends State<_TransactionFormScreen> {
         'amount': int.parse(_amount.text.trim()),
         'occurred_at': _occurredAt!.toUtc().toIso8601String(),
         'description': _description.text.trim(),
+        'receipt_file_id': ?_receiptFileId,
       }),
       'Transaksi dicatat.',
     );
@@ -210,6 +215,8 @@ class _TransactionFormScreenState extends State<_TransactionFormScreen> {
               decoration: const InputDecoration(labelText: 'Keterangan *'),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Wajib diisi' : null,
             ),
+            const SizedBox(height: 12),
+            AttachmentPicker(api: widget.api, purpose: 'finance_receipt', label: 'Nota/kuitansi:', onChanged: (id) => _receiptFileId = id),
             const SizedBox(height: 8),
             Text('Transaksi tidak bisa diubah atau dihapus; kesalahan dikoreksi dengan pembalikan.', style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 24),

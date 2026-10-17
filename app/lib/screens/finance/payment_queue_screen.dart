@@ -4,6 +4,7 @@ import '../../api/api_client.dart';
 import '../../models/current_user.dart';
 import '../community/community_common.dart';
 import '../population/population_common.dart';
+import 'attachments.dart';
 import 'finance_common.dart';
 import '../../widgets/async_view.dart';
 
@@ -94,6 +95,15 @@ class _PaymentQueueScreenState extends State<PaymentQueueScreen> {
                                   Text('Dibayar ${formatDateTime(p['paid_at'] as String?)}${p['reference_code'] != null ? ' · Ref ${p['reference_code']}' : ''}'),
                                   for (final a in (p['allocations'] as List<dynamic>).cast<Map<String, dynamic>>())
                                     Text('• ${a['label']}: ${formatRupiah(a['amount'] as num)}'),
+                                  if (p['proof_file_id'] != null)
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: TextButton.icon(
+                                        onPressed: () => openAttachment(context, widget.api, p['proof_file_id'] as String),
+                                        icon: const Icon(Icons.receipt_outlined),
+                                        label: const Text('Lihat bukti bayar'),
+                                      ),
+                                    ),
                                   if (_canWrite && p['status'] == 'submitted')
                                     Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                                       TextButton(onPressed: () => _reject(p), child: const Text('Tolak')),

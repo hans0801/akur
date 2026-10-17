@@ -41,6 +41,7 @@ class Ledger
         User $actor,
         ?string $referenceType = null,
         ?string $referenceId = null,
+        ?string $receiptFileId = null,
     ): FinanceTransaction {
         return FinanceTransaction::query()->create([
             'unit_id' => $unitId,
@@ -52,6 +53,7 @@ class Ledger
             'reference_type' => $referenceType,
             'reference_id' => $referenceId,
             'created_by' => $actor->id,
+            'receipt_file_id' => $receiptFileId,
         ]);
     }
 

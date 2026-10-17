@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Finance;
 
 use App\Models\AdministrativeUnit;
 use App\Models\DuesAssessment;
+use App\Models\FileObject;
 use App\Models\Household;
 use App\Models\Payment;
 use App\Models\UserMembership;
+use App\Services\Files\PrivateFiles;
 use App\Services\Finance\PaymentProcessor;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -70,7 +72,9 @@ class PaymentController extends FinanceController
 
         $payment = DB::transaction(function () use ($user, $household, $data, $key, $processor) {
             $plan = $processor->plan($household, $data['amount'], $data['allocations'] ?? null);
+            $proof = app(PrivateFiles::class)->claim($data['proof_file_id'] ?? null, $user, FileObject::PAYMENT_PROOF, 'proof_file_id');
             $payment = Payment::query()->create([
+                'proof_file_id' => $proof?->id,
                 'payer_user_id' => $user->id,
                 'household_id' => $household->id,
                 'amount' => $data['amount'],
@@ -130,7 +134,9 @@ class PaymentController extends FinanceController
 
         $payment = DB::transaction(function () use ($request, $household, $data, $key, $processor) {
             $plan = $processor->plan($household, $data['amount'], $data['allocations'] ?? null);
+            $proof = app(PrivateFiles::class)->claim($data['proof_file_id'] ?? null, $request->user(), FileObject::PAYMENT_PROOF, 'proof_file_id');
             $payment = Payment::query()->create([
+                'proof_file_id' => $proof?->id,
                 'household_id' => $household->id,
                 'amount' => $data['amount'],
                 'payment_method' => $data['payment_method'],
@@ -209,6 +215,7 @@ class PaymentController extends FinanceController
             'payment_method' => ['required', Rule::in(Payment::METHODS)],
             'paid_at' => ['nullable', 'date', 'before_or_equal:now'],
             'reference_code' => ['nullable', 'string', 'max:100'],
+            'proof_file_id' => ['nullable', 'uuid'],
             'allocations' => ['nullable', 'array', 'max:50'],
             'allocations.*.dues_assessment_id' => ['required', 'uuid'],
             'allocations.*.amount' => ['required', 'integer', 'min:1'],
@@ -256,6 +263,7 @@ class PaymentController extends FinanceController
             'household_id' => $p->household_id,
             'amount' => $p->amount,
             'payment_method' => $p->payment_method,
+            'proof_file_id' => $p->proof_file_id,
             'status' => $p->status,
             'paid_at' => $p->paid_at?->toIso8601String(),
             'reference_code' => $p->reference_code,

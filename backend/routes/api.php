@@ -8,6 +8,7 @@ use App\Http\Controllers\Community\ActivityController;
 use App\Http\Controllers\Community\AnnouncementController;
 use App\Http\Controllers\Documents\DocumentRequestController;
 use App\Http\Controllers\Documents\LetterController;
+use App\Http\Controllers\FileController;
 use App\Http\Controllers\Finance\CashbookController;
 use App\Http\Controllers\Finance\DuesController;
 use App\Http\Controllers\Finance\PaymentController;
@@ -30,6 +31,11 @@ Route::prefix('v1')->group(function () {
         ->middleware(['signed', 'throttle:sensitive'])
         ->name('documents.letter');
 
+    Route::get('file-downloads/{file}', [FileController::class, 'download'])
+        ->whereUuid('file')
+        ->middleware(['signed', 'throttle:sensitive'])
+        ->name('files.download');
+
     // Ekspor laporan kas (CSV / siap cetak) lewat tautan bertanda tangan berumur pendek.
     Route::get('finance-exports/{unit}', [ReportExportController::class, 'download'])
         ->whereUuid('unit')
@@ -50,6 +56,10 @@ Route::prefix('v1')->group(function () {
         // Hanya akun aktif (sudah ditautkan/diverifikasi).
         Route::middleware('account.active')->group(function () {
             Route::get('units/{unit}/memberships', [MembershipController::class, 'index'])->whereUuid('unit');
+
+            // Berkas privat (bukti bayar, nota kas): unggah lalu lampirkan lewat *_file_id.
+            Route::post('files', [FileController::class, 'store'])->middleware('throttle:sensitive');
+            Route::post('files/{file}/link', [FileController::class, 'link'])->whereUuid('file')->middleware('throttle:sensitive');
 
             // W8: iuran dan pembayaran.
             Route::whereUuid(['unit', 'duesType', 'duesPeriod', 'duesAssessment', 'payment'])->group(function () {

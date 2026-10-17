@@ -33,7 +33,8 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            // Berkas privat hanya lewat FileController (otorisasi + audit), bukan route bawaan Laravel.
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

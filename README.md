@@ -42,13 +42,15 @@ Selesai W8: iuran. Bendahara membuat jenis iuran dan periode (tagihan otomatis u
 warga melapor pembayaran (dialokasikan ke tagihan terlama, `Idempotency-Key` mencegah ganda), bendahara
 memverifikasi/menolak atau mencatat tunai; pembayaran terverifikasi otomatis masuk kas sebagai pemasukan.
 Ketua RT/RW melihat rincian. Rekonsiliasi cache `amount_paid`: `php artisan akur:reconcile-dues [--fix]`.
-Belum: unggah bukti transfer, payment gateway.
+Bukti bayar dan nota kas diunggah (JPEG/PNG/WebP/PDF, maks 5 MB, tipe dicek dari isi), disimpan terenkripsi
+dengan APP_KEY di `storage/app/private`, dibuka lewat tautan bertanda tangan; unggahan yatim dihapus harian oleh
+service `scheduler`. Tanpa payment gateway (di luar MVP).
 
 Selesai W9: buku kas per unit (kategori bawaan, pemasukan/pengeluaran manual, pembalikan; baris kas
 *append-only* dijaga trigger DB), refund pembayaran iuran (membalik pemasukan dan membuka lagi tagihan),
 laporan bulanan & tahunan agregat yang terbuka untuk semua warga unit (rincian transaksi hanya pengurus keuangan).
 Batas bulan laporan memakai `AKUR_REPORT_TIMEZONE` (bawaan Asia/Jakarta). Ekspor laporan (CSV transaksi dan versi
-cetak/PDF) lewat tautan bertanda tangan 5 menit, khusus pengurus keuangan. Belum: unggah nota/kuitansi.
+cetak/PDF) lewat tautan bertanda tangan 5 menit, khusus pengurus keuangan.
 
 
 Selesai W10 (penyelesaian UI): seluruh UI dan pesan API berbahasa Indonesia (pemilih tanggal, pesan validasi

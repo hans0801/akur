@@ -27,6 +27,10 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Kamera dipakai untuk memotret bukti pembayaran iuran atau nota kas.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Galeri dipakai untuk memilih foto bukti pembayaran iuran atau nota kas.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleExecutable</key>

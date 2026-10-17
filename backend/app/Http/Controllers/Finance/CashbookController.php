@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Finance;
 
 use App\Models\AdministrativeUnit;
+use App\Models\FileObject;
 use App\Models\FinanceCategory;
 use App\Models\FinanceTransaction;
+use App\Services\Files\PrivateFiles;
 use App\Services\Finance\Ledger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -95,12 +97,15 @@ class CashbookController extends FinanceController
             'amount' => ['required', 'integer', 'min:1', 'max:10000000000'],
             'occurred_at' => ['required', 'date', 'before_or_equal:now'],
             'description' => ['required', 'string', 'max:500'],
+            'receipt_file_id' => ['nullable', 'uuid'],
         ]);
         $category = FinanceCategory::query()->whereKey($data['category_id'])->where('unit_id', $unit->id)->where('is_active', true)->first();
         abort_if($category === null, 422, 'Kategori tidak ditemukan di unit ini.');
 
         $transaction = DB::transaction(function () use ($request, $unit, $ledger, $data, $category) {
-            $transaction = $ledger->record($unit->id, $category, $data['amount'], now()->parse($data['occurred_at']), $data['description'], $request->user());
+            // Ledger append-only: nota harus dilampirkan saat transaksi dibuat.
+            $receipt = app(PrivateFiles::class)->claim($data['receipt_file_id'] ?? null, $request->user(), FileObject::FINANCE_RECEIPT, 'receipt_file_id');
+            $transaction = $ledger->record($unit->id, $category, $data['amount'], now()->parse($data['occurred_at']), $data['description'], $request->user(), receiptFileId: $receipt?->id);
             $this->audit->log('finance_transaction.created', 'finance_transaction', $transaction->id, $unit->id, [
                 'kind' => $transaction->kind,
                 'amount' => $transaction->amount,
@@ -147,6 +152,7 @@ class CashbookController extends FinanceController
             'description' => $t->description,
             'category' => $t->category ? ['id' => $t->category->id, 'name' => $t->category->name, 'kind' => $t->category->kind] : null,
             'reference_type' => $t->reference_type,
+            'receipt_file_id' => $t->receipt_file_id,
             'reversed_transaction_id' => $t->reversed_transaction_id,
             'is_reversed' => $t->relationLoaded('reversal') ? $t->reversal !== null : null,
             'created_by' => $t->creator?->display_name,

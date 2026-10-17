@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../api/api_client.dart';
 import '../community/community_common.dart';
 import '../population/population_common.dart';
+import 'attachments.dart';
 import 'finance_common.dart';
 import '../../widgets/async_view.dart';
 
@@ -107,6 +108,7 @@ class _MyDuesScreenState extends State<MyDuesScreen> {
                                 ].join('\n')),
                                 isThreeLine: true,
                                 trailing: paymentChip(p['status'] as String),
+                                onTap: p['proof_file_id'] == null ? null : () => openAttachment(context, widget.api, p['proof_file_id'] as String),
                               ),
                             ),
                         ],
@@ -137,6 +139,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
   final _reference = TextEditingController();
   final _idempotencyKey = newIdempotencyKey();
   String _method = 'transfer';
+  String? _proofFileId;
   bool _saving = false;
 
   Future<void> _save() async {
@@ -148,6 +151,7 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
         'amount': int.parse(_amount.text.trim()),
         'payment_method': _method,
         if (_reference.text.trim().isNotEmpty) 'reference_code': _reference.text.trim(),
+        'proof_file_id': ?_proofFileId,
       }, {'Idempotency-Key': _idempotencyKey}),
       'Pembayaran dilaporkan. Menunggu verifikasi bendahara.',
     );
@@ -185,6 +189,8 @@ class _PaymentFormScreenState extends State<PaymentFormScreen> {
             ),
             const SizedBox(height: 12),
             TextFormField(controller: _reference, decoration: const InputDecoration(labelText: 'No. referensi / catatan transfer')),
+            const SizedBox(height: 12),
+            AttachmentPicker(api: widget.api, purpose: 'payment_proof', label: 'Bukti bayar:', onChanged: (id) => _proofFileId = id),
             const SizedBox(height: 8),
             Text('Pembayaran dialokasikan ke tagihan yang paling lama jatuh tempo.', style: Theme.of(context).textTheme.bodySmall),
             const SizedBox(height: 24),

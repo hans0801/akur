@@ -63,6 +63,38 @@ class ApiClient {
 
   Future<Map<String, dynamic>> delete(String path, [Map<String, dynamic>? body]) => _send('DELETE', path, body);
 
+  /// Unggah satu berkas (multipart) — dipakai untuk bukti bayar dan nota kas.
+  Future<Map<String, dynamic>> upload(String path, {required List<int> bytes, required String filename, Map<String, String> fields = const {}}) async {
+    final request = http.MultipartRequest('POST', Uri.parse('${AppConfig.apiBaseUrl}/api/v1$path'))
+      ..headers['Accept'] = 'application/json'
+      ..fields.addAll(fields)
+      ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+    if (kIsWeb) {
+      request.headers['X-AKUR-CSRF'] = '1';
+    } else {
+      final token = await _storage.read(key: _tokenKey);
+      if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    }
+
+    final http.Response response;
+    try {
+      response = await http.Response.fromStream(await _client.send(request).timeout(const Duration(seconds: 60)));
+    } on TimeoutException {
+      throw ApiException(0, 'Unggahan terlalu lama. Periksa koneksi internet Anda lalu coba lagi.');
+    } catch (_) {
+      throw ApiException(0, 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+    }
+    final decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
+    final json = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{'data': decoded};
+    if (response.statusCode == 401) onUnauthorized?.call();
+    if (response.statusCode >= 400) {
+      final errors = json['errors'] as Map<String, dynamic>?;
+      final first = errors?.values.whereType<List<dynamic>>().expand((e) => e).firstOrNull;
+      throw ApiException(response.statusCode, (first ?? json['message'] ?? 'Unggahan gagal (${response.statusCode}).') as String);
+    }
+    return json;
+  }
+
   Future<Map<String, dynamic>> _send(String method, String path, [Map<String, dynamic>? body, Map<String, String>? headers]) async {
     final request = http.Request(method, Uri.parse('${AppConfig.apiBaseUrl}/api/v1$path'))
       ..headers.addAll({'Accept': 'application/json', 'Content-Type': 'application/json', ...?headers});

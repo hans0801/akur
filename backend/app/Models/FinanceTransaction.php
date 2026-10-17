@@ -23,7 +23,7 @@ class FinanceTransaction extends Model
 
     protected $fillable = [
         'unit_id', 'category_id', 'kind', 'amount', 'occurred_at', 'description',
-        'reference_type', 'reference_id', 'created_by', 'reversed_transaction_id',
+        'reference_type', 'reference_id', 'created_by', 'reversed_transaction_id', 'receipt_file_id',
     ];
 
     protected function casts(): array

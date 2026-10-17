@@ -50,6 +50,14 @@ return [
     'finance_write_roles' => [Role::SUPER_ADMIN, Role::BENDAHARA],
     'finance_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::BENDAHARA],
 
+    // Unggahan privat (bukti bayar, nota kas): tipe diperiksa dari isi berkas, bukan nama/ekstensi.
+    'uploads' => [
+        'max_kb' => (int) env('AKUR_UPLOAD_MAX_KB', 5120),
+        'mimes' => ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'],
+        // Berkas yang tidak pernah dilampirkan dihapus setelah sekian jam (akur:prune-files).
+        'orphan_ttl_hours' => 24,
+    ],
+
     // Batas bulan pada laporan kas mengikuti waktu setempat, bukan UTC.
     'report_timezone' => env('AKUR_REPORT_TIMEZONE', 'Asia/Jakarta'),
 

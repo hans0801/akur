@@ -51,6 +51,34 @@ services:
     mem_limit: 512m
     logging: *logging
 
+  # Tugas terjadwal (routes/console.php): hapus unggahan yatim, rekonsiliasi iuran harian.
+  scheduler:
+    image: akur-api:latest
+    restart: unless-stopped
+    env_file: ./backend/.env.production
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_DATABASE: ${DB_DATABASE:-akur}
+      DB_USERNAME: ${DB_USERNAME:-akur}
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD wajib diisi}
+      APP_URL: https://${APP_DOMAIN}
+      AKUR_WEB_ORIGINS: https://${APP_DOMAIN}
+    command: ["php", "artisan", "schedule:work"]
+    healthcheck:
+      disable: true
+    volumes:
+      - api_storage:/app/storage/app/private
+    networks: [internal]
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_started
+    mem_limit: 192m
+    logging: *logging
+
   db:
     image: postgres:17-alpine
     restart: unless-stopped

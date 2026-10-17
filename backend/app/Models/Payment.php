@@ -23,7 +23,7 @@ class Payment extends Model
 
     protected $fillable = [
         'payer_user_id', 'household_id', 'amount', 'payment_method', 'status', 'paid_at', 'reference_code',
-        'verified_by', 'verified_at', 'rejection_reason', 'idempotency_key',
+        'verified_by', 'verified_at', 'rejection_reason', 'idempotency_key', 'proof_file_id',
     ];
 
     protected function casts(): array
