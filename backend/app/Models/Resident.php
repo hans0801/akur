@@ -5,11 +5,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Resident extends Model
 {
     use HasUuids, SoftDeletes;
+
+    // Status yang dapat dipilih saat input/koreksi. moved_out dan deceased diset lewat mutasi.
+    public const RESIDENCY_STATUSES = ['permanent', 'contract', 'temporary'];
+
+    public const STATUS_MOVED_OUT = 'moved_out';
+
+    public const STATUS_DECEASED = 'deceased';
+
+    public const GENDERS = ['male', 'female'];
 
     protected $fillable = [
         'household_id', 'user_id', 'full_name', 'birth_place', 'birth_date', 'gender', 'marital_status',
@@ -38,5 +48,10 @@ class Resident extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function movements(): HasMany
+    {
+        return $this->hasMany(ResidentMovement::class);
     }
 }

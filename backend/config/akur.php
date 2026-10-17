@@ -38,4 +38,14 @@ return [
     // Peran yang boleh meninjau akun pending dan menautkannya ke data warga (FR-02).
     'linking_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
 
+    // FR-04: data kependudukan. Ketua RW hanya membaca; bendahara dan warga tidak punya akses.
+    'population_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::SEKRETARIS],
+    'population_write_roles' => [Role::SUPER_ADMIN, Role::KETUA_RT, Role::SEKRETARIS],
+
+    // Kunci enkripsi NIK/KK (32 byte acak, base64) dan kunci HMAC lookup yang BERBEDA. Lihat App\Services\Pii.
+    'pii' => [
+        'encryption_key' => env('AKUR_PII_ENCRYPTION_KEY'),
+        'lookup_key' => env('AKUR_PII_LOOKUP_KEY'),
+    ],
+
 ];

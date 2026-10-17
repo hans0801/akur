@@ -4,6 +4,8 @@ namespace App\Providers;
 
 use App\Services\Access\UnitAccess;
 use App\Services\Auth\SessionManager;
+use App\Services\Pii\PiiCipher;
+use App\Services\Pii\SodiumPiiCipher;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +17,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->scoped(UnitAccess::class);
+        $this->app->singleton(PiiCipher::class, fn () => SodiumPiiCipher::fromConfig());
     }
 
     public function boot(): void

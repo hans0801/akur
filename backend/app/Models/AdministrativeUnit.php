@@ -44,4 +44,16 @@ class AdministrativeUnit extends Model
     {
         return array_values(array_filter([$this->id, $this->parent_unit_id]));
     }
+
+    /**
+     * ID unit ini beserta RT di bawahnya (untuk RW). Cakupan data saat membaca daftar per unit.
+     *
+     * @return list<string>
+     */
+    public function selfAndDescendantIds(): array
+    {
+        return $this->unit_type === self::TYPE_RW
+            ? [$this->id, ...$this->children()->pluck('id')->all()]
+            : [$this->id];
+    }
 }

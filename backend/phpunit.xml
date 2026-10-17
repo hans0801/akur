@@ -31,6 +31,9 @@
         <env name="DB_PASSWORD" value="akur_dev_only"/>
         <env name="GOOGLE_CLIENT_IDS" value="test-web-client.apps.googleusercontent.com"/>
         <env name="AKUR_WEB_ORIGINS" value="https://app.test"/>
+        <!-- Kunci PII khusus pengujian; jangan dipakai di lingkungan lain. -->
+        <env name="AKUR_PII_ENCRYPTION_KEY" value="base64:dGVzdC1vbmx5LXBpaS1lbmNyeXB0aW9uLWtleS0wMDE="/>
+        <env name="AKUR_PII_LOOKUP_KEY" value="base64:dGVzdC1vbmx5LXBpaS1sb29rdXAtaG1hYy1rZXktMDAxMg=="/>
         <env name="DB_URL" value=""/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
