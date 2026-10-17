@@ -131,6 +131,45 @@ class LetterPdfTest extends TestCase
         $this->get($url.'x')->assertForbidden();
     }
 
+    public function test_settings_unit_list_includes_rts_below_rw_with_edit_flags(): void
+    {
+        ['rw' => $rw, 'rt1' => $rt1, 'rt2' => $rt2] = $this->unitTree();
+
+        $admin = $this->bearerFor($this->userWithRole($rw, Role::SUPER_ADMIN));
+        $units = collect($this->getJson('/api/v1/letter-settings/units', $admin)->assertOk()->json('data'));
+        $this->assertSame([$rt1->id, $rt2->id, $rw->id], $units->pluck('id')->all());
+        $this->assertTrue($units->every(fn ($u) => $u['can_edit']));
+        $this->assertSame("{$rt1->name} / RW 06", $units->first()['label']);
+
+        // Ketua RW melihat RT di bawahnya tetapi hanya boleh mengubah pengaturan RW.
+        $ketuaRw = $this->bearerFor($this->userWithRole($rw, Role::KETUA_RW));
+        $flags = collect($this->getJson('/api/v1/letter-settings/units', $ketuaRw)->json('data'))->pluck('can_edit', 'id');
+        $this->assertSame([$rt1->id => false, $rt2->id => false, $rw->id => true], $flags->all());
+
+        $ketuaRt = $this->bearerFor($this->userWithRole($rt1, Role::KETUA_RT));
+        $this->getJson('/api/v1/letter-settings/units', $ketuaRt)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.can_edit', true);
+
+        // Super admin di RW boleh mengisi nama Ketua RT dan tanda tangannya.
+        $this->putJson("/api/v1/units/{$rt1->id}/letter-settings", ['signer_name' => 'Ahmad Ketua RT'], $admin)->assertOk();
+    }
+
+    public function test_rw_sample_uses_an_rt_below_and_never_prints_000(): void
+    {
+        ['rw' => $rw] = $this->unitTree();
+
+        $html = app(LetterPdf::class)->sampleHtml($rw);
+        $this->assertStringContainsString('RUKUN TETANGGA 005/006', $html);
+        $this->assertStringContainsString('/RT005/SP/', $html);
+        $this->assertStringContainsString('Pengurus RT.005/006', $html);
+        $this->assertStringNotContainsString('000/', $html);
+
+        $lonelyRw = AdministrativeUnit::factory()->create(['code' => '09']);
+        $html = app(LetterPdf::class)->sampleHtml($lonelyRw);
+        $this->assertStringContainsString('RUKUN WARGA 009', $html);
+        $this->assertStringNotContainsString('000/', $html);
+        $this->assertStringNotContainsString('RT. 000', $html);
+    }
+
     public function test_religion_is_validated_and_returned(): void
     {
         ['rt1' => $rt] = $this->unitTree();

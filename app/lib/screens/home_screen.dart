@@ -121,7 +121,7 @@ class HomeScreen extends StatelessWidget {
                   subtitle: const Text('Nama ketua, kop, tanda tangan + cap'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => LetterSettingsScreen(api: auth.api, units: user.documentQueueUnits)),
+                    MaterialPageRoute(builder: (_) => LetterSettingsScreen(api: auth.api)),
                   ),
                 ),
               ),

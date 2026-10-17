@@ -34,6 +34,34 @@ class LetterSettingsController extends Controller
         private readonly PrivateFiles $files,
     ) {}
 
+    /**
+     * Unit yang pengaturan suratnya boleh dibuka pengguna: unit keanggotaannya (peran surat) beserta RT di bawah RW-nya,
+     * dengan penanda apakah boleh diubah. RT didahulukan karena surat selalu terbit atas nama RT.
+     */
+    public function units(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $ids = $this->access->unitIdsWhere($user, config('akur.document_read_roles'));
+
+        $units = AdministrativeUnit::query()
+            ->whereIn('id', $ids)
+            ->with('parent:id,code')
+            ->get()
+            ->sortBy(fn (AdministrativeUnit $u) => [$u->unit_type === AdministrativeUnit::TYPE_RT ? 0 : 1, $u->parent?->code ?? $u->code, $u->code])
+            ->values()
+            ->map(fn (AdministrativeUnit $u) => [
+                'id' => $u->id,
+                'unit_type' => $u->unit_type,
+                'code' => $u->code,
+                'name' => $u->name,
+                'parent_unit_id' => $u->parent_unit_id,
+                'label' => $u->unit_type === AdministrativeUnit::TYPE_RT && $u->parent ? "{$u->name} / RW {$u->parent->code}" : $u->name,
+                'can_edit' => $this->access->hasAnyRole($user, $u, self::editRoles($u)),
+            ]);
+
+        return response()->json(['data' => $units]);
+    }
+
     public function show(Request $request, AdministrativeUnit $unit): JsonResponse
     {
         $this->access->authorize($request->user(), $unit, config('akur.document_read_roles'));

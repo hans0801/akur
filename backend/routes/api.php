@@ -120,6 +120,7 @@ Route::prefix('v1')->group(function () {
                     ->middleware('throttle:sensitive');
 
                 // Pengaturan surat per unit: penanda tangan, wilayah kop, logo, tanda tangan + cap.
+                Route::get('letter-settings/units', [LetterSettingsController::class, 'units']);
                 Route::get('units/{unit}/letter-settings', [LetterSettingsController::class, 'show']);
                 Route::put('units/{unit}/letter-settings', [LetterSettingsController::class, 'update']);
                 Route::post('units/{unit}/letter-settings/preview-link', [LetterSettingsController::class, 'previewLink'])

@@ -67,9 +67,29 @@ class LetterPdf
     /** Contoh surat dengan data fiktif, untuk memeriksa kop dan tanda tangan sebelum dipakai. */
     public function sample(AdministrativeUnit $unit): string
     {
+        return $this->render($this->sampleData($unit));
+    }
+
+    /** HTML contoh surat (dipakai juga oleh tes). */
+    public function sampleHtml(AdministrativeUnit $unit): string
+    {
+        return view('letters.surat_pengantar', $this->sampleData($unit))->render();
+    }
+
+    /**
+     * Surat selalu terbit atas nama RT, jadi contoh untuk RW memakai RT pertama di bawahnya
+     * (kop RT/RW dan dua penanda tangan tampil seperti surat sungguhan).
+     *
+     * @return array<string, mixed>
+     */
+    private function sampleData(AdministrativeUnit $unit): array
+    {
+        if ($unit->unit_type === AdministrativeUnit::TYPE_RW) {
+            $unit = $unit->children()->where('unit_type', AdministrativeUnit::TYPE_RT)->orderBy('code')->first() ?? $unit;
+        }
         $now = CarbonImmutable::now(config('akur.report_timezone'));
 
-        return $this->render($this->unitData($unit) + [
+        return $this->unitData($unit) + [
             'sample' => true,
             'number' => '001/'.LetterNumberer::unitCode($unit).'/'.LetterNumberer::KIND.'/'.$now->format('m/Y'),
             'date' => self::formatDate($now),
@@ -83,7 +103,7 @@ class LetterPdf
                 ['Alamat', 'Jl. Contoh No. 1'],
                 ['Maksud & Keperluan', 'Contoh surat pengantar'],
             ],
-        ]);
+        ];
     }
 
     public static function filename(DocumentRequest $request): string
@@ -141,7 +161,9 @@ class LetterPdf
         $rwSet = $rw ? UnitLetterSetting::query()->find($rw->id) : null;
         $pick = fn (string $field) => $rtSet?->{$field} ?: ($rwSet?->{$field} ?: null);
 
-        $pair = trim(str_pad((string) $rt?->code, 3, '0', STR_PAD_LEFT).'/'.str_pad((string) $rw?->code, 3, '0', STR_PAD_LEFT), '/');
+        // "005/006" untuk RT; RW tanpa RT hanya "006" (bukan "000/006").
+        $pad = fn (?AdministrativeUnit $u) => $u ? str_pad((string) $u->code, 3, '0', STR_PAD_LEFT) : null;
+        $pair = implode('/', array_filter([$pad($rt), $pad($rw)]));
         $kelurahan = $pick('kelurahan');
         $kecamatan = $pick('kecamatan');
         $city = $pick('city');

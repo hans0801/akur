@@ -9,11 +9,11 @@ import '../population/population_common.dart';
 
 /// Pengaturan surat pengantar per RT/RW: nama Ketua (penanda tangan), wilayah untuk kop surat,
 /// gambar tanda tangan + cap, dan logo kop. Ketua RT mengatur RT-nya, Ketua RW mengatur RW-nya.
+/// Daftar unit diambil dari server: unit keanggotaan pengguna beserta RT di bawah RW-nya (RT didahulukan).
 class LetterSettingsScreen extends StatefulWidget {
-  const LetterSettingsScreen({super.key, required this.api, required this.units});
+  const LetterSettingsScreen({super.key, required this.api});
 
   final ApiClient api;
-  final List<UnitRef> units;
 
   @override
   State<LetterSettingsScreen> createState() => _LetterSettingsScreenState();
@@ -27,12 +27,28 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
     'province': 'Provinsi',
   };
 
-  late UnitRef _unit = widget.units.first;
-  late Future<Map<String, dynamic>> _data = _load();
+  late Future<List<UnitRef>> _units = _loadUnits();
+  UnitRef? _selected;
+  Future<Map<String, dynamic>>? _data;
   final Map<String, TextEditingController> _controllers = {};
   String? _newSignatureId;
   String? _newLogoId;
   bool _saving = false;
+
+  UnitRef get _unit => _selected!;
+
+  Future<List<UnitRef>> _loadUnits() async {
+    final units = dataList(await widget.api.get('/letter-settings/units'))
+        .map(
+          (u) => UnitRef(id: u['id'] as String, unitType: u['unit_type'] as String, code: u['code'] as String, name: u['label'] as String),
+        )
+        .toList();
+    if (units.isNotEmpty) {
+      _selected = units.first;
+      _data = _load();
+    }
+    return units;
+  }
 
   Future<Map<String, dynamic>> _load() async {
     final data = (await widget.api.get('/units/${_unit.id}/letter-settings'))['data'] as Map<String, dynamic>;
@@ -77,28 +93,38 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
     }
   }
 
-  Widget _imageRow(Map<String, dynamic> data, {required String title, required String column, required String purpose, required bool canEdit}) {
+  Widget _imageRow(
+    Map<String, dynamic> data, {
+    required String title,
+    required String column,
+    required String purpose,
+    required bool canEdit,
+  }) {
     final current = data[column] as String?;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: Theme.of(context).textTheme.titleSmall),
-          const SizedBox(height: 4),
-          Row(children: [
-            Expanded(child: Text(current == null ? 'Belum ada.' : 'Sudah terpasang.')),
-            if (current != null)
-              TextButton(onPressed: () => openAttachment(context, widget.api, current), child: const Text('Lihat')),
-          ]),
-          if (canEdit)
-            AttachmentPicker(
-              api: widget.api,
-              purpose: purpose,
-              label: current == null ? 'Unggah:' : 'Ganti:',
-              resize: false,
-              onChanged: (id) => column == 'signature_file_id' ? _newSignatureId = id : _newLogoId = id,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Expanded(child: Text(current == null ? 'Belum ada.' : 'Sudah terpasang.')),
+                if (current != null) TextButton(onPressed: () => openAttachment(context, widget.api, current), child: const Text('Lihat')),
+              ],
             ),
-        ]),
+            if (canEdit)
+              AttachmentPicker(
+                api: widget.api,
+                purpose: purpose,
+                label: current == null ? 'Unggah:' : 'Ganti:',
+                resize: false,
+                onChanged: (id) => column == 'signature_file_id' ? _newSignatureId = id : _newLogoId = id,
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -108,11 +134,32 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Pengaturan surat')),
-      body: Column(children: [
-        UnitDropdown(units: widget.units, value: _unit, onChanged: (u) {
-          _unit = u;
-          _reload();
-        }),
+      body: FutureBuilder<List<UnitRef>>(
+        future: _units,
+        builder: (context, unitsSnapshot) {
+          if (unitsSnapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
+          if (unitsSnapshot.hasError) {
+            return ErrorView(error: unitsSnapshot.error, onRetry: () => setState(() => _units = _loadUnits()));
+          }
+          final units = unitsSnapshot.data!;
+          if (units.isEmpty) return const EmptyState('Tidak ada RT/RW yang pengaturan suratnya bisa Anda buka.');
+          return _settingsBody(theme, units);
+        },
+      ),
+    );
+  }
+
+  Widget _settingsBody(ThemeData theme, List<UnitRef> units) {
+    return Column(
+      children: [
+        UnitDropdown(
+          units: units,
+          value: _unit,
+          onChanged: (u) {
+            _selected = u;
+            _reload();
+          },
+        ),
         Expanded(
           child: FutureBuilder<Map<String, dynamic>>(
             future: _data,
@@ -128,9 +175,9 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
                   Text(
                     isRt
                         ? 'Dipakai pada kop dan tanda tangan "Pengurus RT" di surat pengantar. Wilayah yang kosong memakai '
-                            'pengaturan RW induk.'
+                              'pengaturan RW induk.'
                         : 'Nama dan tanda tangan Ketua RW tampil di kolom kiri surat pengantar setiap RT di bawah RW ini; '
-                            'wilayah dan logo RW menjadi bawaan untuk RT-nya.',
+                              'wilayah dan logo RW menjadi bawaan untuk RT-nya.',
                     style: theme.textTheme.bodySmall,
                   ),
                   if (!canEdit) ...[
@@ -148,19 +195,25 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
                   ),
                   for (final e in _fields.entries) ...[
                     const SizedBox(height: 8),
-                    TextField(controller: _controllers[e.key], enabled: canEdit, decoration: InputDecoration(labelText: e.value)),
+                    TextField(
+                      controller: _controllers[e.key],
+                      enabled: canEdit,
+                      decoration: InputDecoration(labelText: e.value),
+                    ),
                   ],
                   const SizedBox(height: 16),
                   _imageRow(data, title: 'Tanda tangan + cap', column: 'signature_file_id', purpose: 'letter_signature', canEdit: canEdit),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Text('Gunakan PNG berlatar transparan (maks 2 MB) agar tanda tangan tidak menutupi teks.', style: theme.textTheme.bodySmall),
+                    child: Text(
+                      'Gunakan PNG berlatar transparan (maks 2 MB) agar tanda tangan tidak menutupi teks.',
+                      style: theme.textTheme.bodySmall,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   _imageRow(data, title: 'Logo kop surat (opsional)', column: 'logo_file_id', purpose: 'letter_logo', canEdit: canEdit),
                   const SizedBox(height: 16),
-                  if (canEdit)
-                    FilledButton(onPressed: _saving ? null : _save, child: Text(_saving ? 'Menyimpan…' : 'Simpan')),
+                  if (canEdit) FilledButton(onPressed: _saving ? null : _save, child: Text(_saving ? 'Menyimpan…' : 'Simpan')),
                   const SizedBox(height: 8),
                   OutlinedButton.icon(
                     onPressed: _preview,
@@ -172,7 +225,7 @@ class _LetterSettingsScreenState extends State<LetterSettingsScreen> {
             },
           ),
         ),
-      ]),
+      ],
     );
   }
 }
