@@ -8,3 +8,6 @@ infra/web-dist/
 # Kunci backup age / kunci lain yang tidak boleh ter-commit
 *.age
 *.key
+
+# Dump database (berisi PII)
+*.dump
