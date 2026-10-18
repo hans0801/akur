@@ -7,7 +7,7 @@ meneruskan trafik ke container API (port 8080). `compose.yaml` + Caddy tidak dip
 | Komponen | Nilai |
 |---|---|
 | API dev | `https://api-dev.rt05rw06larinda.my.id` (Laravel/FrankenPHP, port 8080, health `/up`) |
-| Web dev | `https://dev.rt05rw06larinda.my.id` (Flutter web statis di Caddy, port 8080, health `/healthz`) |
+| Web dev | `https://dev.rt05rw06larinda.my.id` (image GHCR dari GitHub Actions, Caddy port 8080, health `/healthz`) |
 | Database | Postgres "Development" di Coolify, tanpa port publik |
 | Env | [dev.env.example](dev.env.example) |
 
@@ -117,31 +117,42 @@ Dari Terminal container API: `php artisan akur:security-check` dan `php artisan 
 
 ## 6. Aplikasi Flutter web di Coolify
 
-Image dibangun dari [app/Dockerfile](../../app/Dockerfile): Flutter 3.47.2 (tarball resmi, dicek SHA-256) menjalankan
-`flutter build web --release`, lalu hasilnya disajikan Caddy ([app/docker/Caddyfile](../../app/docker/Caddyfile))
-dengan fallback SPA ke `index.html`. Web dan API beda subdomain pada *site* yang sama, jadi cookie sesi
-`SameSite=Strict` tetap terkirim; origin web sudah ada di `AKUR_WEB_ORIGINS` API.
+`flutter build web` (dart2js) butuh 2–3 GB RAM. Itu terlalu berat untuk VPS 4 GB yang sudah menjalankan Coolify
+dan dua Postgres: build di VPS sempat menghabiskan RAM dan menjatuhkan API. Karena itu image dibangun di GitHub
+Actions ([.github/workflows/web-dev.yml](../../.github/workflows/web-dev.yml)), didorong ke GHCR, dan Coolify
+hanya menarik image jadi.
 
-**+ New → Application** di project AKUR, environment development (sudah dibuat: `akur-web-dev`):
+Image dari [app/Dockerfile](../../app/Dockerfile): Flutter 3.47.2 (tarball resmi, dicek SHA-256) menjalankan
+`flutter build web --release`, lalu hasilnya disajikan Caddy ([app/docker/Caddyfile](../../app/docker/Caddyfile))
+di port 8080 dengan fallback SPA ke `index.html`. Web dan API beda subdomain pada *site* yang sama, jadi cookie
+sesi `SameSite=Strict` tetap terkirim; origin web sudah ada di `AKUR_WEB_ORIGINS` API.
+
+**GitHub** (repo → Settings → Secrets and variables → Actions):
+
+| Jenis | Nama | Nilai |
+|---|---|---|
+| Variable | `GOOGLE_WEB_CLIENT_ID` | web client ID OAuth (sama dengan `GOOGLE_CLIENT_IDS` di API) |
+| Variable | `COOLIFY_WEB_UUID` | `lqohrd5xchukmjtcodbhxv1k` (opsional, untuk auto-deploy) |
+| Secret | `COOLIFY_TOKEN` | token API Coolify dengan izin deploy (opsional) |
+
+Workflow jalan tiap push ke `main` yang mengubah `app/**` (atau manual: Actions → Web dev image → Run workflow),
+menghasilkan `ghcr.io/hans0801/akur-web:dev` dan `:dev-<sha>`. Tanpa `COOLIFY_TOKEN`, klik **Redeploy** di Coolify.
+
+Setelah image pertama ter-push: GitHub → profil → Packages → `akur-web` → Package settings → **Change visibility →
+Public** (isinya hanya JS/aset publik; client ID OAuth memang publik). Kalau ingin tetap private, jalankan
+`docker login ghcr.io` di VPS dengan PAT `read:packages`.
+
+**Coolify** (sudah dibuat: `akur-web-dev`, uuid `lqohrd5xchukmjtcodbhxv1k`):
 
 | Pengaturan | Nilai |
 |---|---|
-| Source | Private repository (GitHub App) → `hans0801/akur`, branch `main` |
-| Build Pack | **Dockerfile** |
-| Base Directory | `/app` |
-| Dockerfile Location | `/Dockerfile` |
+| Build Pack | **Docker Image** |
+| Image | `ghcr.io/hans0801/akur-web`, tag `dev` |
 | Ports Exposes | `8080` |
 | Domains | `https://dev.rt05rw06larinda.my.id` |
 | Health Check | aktif, path `/healthz`, port `8080` |
 
-**Environment Variables** — keduanya dicentang **Build Variable** (bukan runtime; nilainya dibakar ke JS saat build):
-
-```env
-API_BASE_URL=https://api-dev.rt05rw06larinda.my.id
-GOOGLE_WEB_CLIENT_ID=<web client ID, sama dengan GOOGLE_CLIENT_IDS di API>
-```
-
-Klik **Deploy**. Build pertama ±5–10 menit (unduh SDK Flutter); mengganti variabel di atas butuh redeploy.
+Tidak ada environment variable di Coolify: `API_BASE_URL` dan `GOOGLE_WEB_CLIENT_ID` dibakar ke JS saat build di Actions.
 
 **Google Cloud Console** → Credentials → OAuth client (Web) → *Authorized JavaScript origins*: tambahkan
 `https://dev.rt05rw06larinda.my.id`. Tanpa ini tombol login Google menampilkan error `origin_mismatch`.

@@ -1,0 +1,66 @@
+name: Web dev image
+
+# Flutter web dibangun di runner GitHub (dart2js butuh RAM besar, terlalu berat untuk VPS 4 GB),
+# lalu image didorong ke GHCR dan Coolify hanya menarik image jadi. Lihat infra/coolify/README.md.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/**"
+      - ".github/workflows/web-dev.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: web-dev
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/hans0801/akur-web
+  # Keduanya publik (ikut terbaca di main.dart.js); secret OAuth hanya ada di API.
+  API_BASE_URL: https://api-dev.rt05rw06larinda.my.id
+  GOOGLE_WEB_CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cek variabel
+        run: test -n "$GOOGLE_WEB_CLIENT_ID" || { echo "::error::Set repository variable GOOGLE_WEB_CLIENT_ID"; exit 1; }
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: app
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:dev
+            ${{ env.IMAGE }}:dev-${{ github.sha }}
+          build-args: |
+            API_BASE_URL=${{ env.API_BASE_URL }}
+            GOOGLE_WEB_CLIENT_ID=${{ env.GOOGLE_WEB_CLIENT_ID }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Opsional: tanpa secret COOLIFY_TOKEN, klik Redeploy di Coolify secara manual.
+      - name: Deploy di Coolify
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_WEB_UUID: ${{ vars.COOLIFY_WEB_UUID }}
+        if: ${{ env.COOLIFY_TOKEN != '' && env.COOLIFY_WEB_UUID != '' }}
+        run: |
+          curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "https://console.rt05rw06larinda.my.id/api/v1/deploy?uuid=$COOLIFY_WEB_UUID&force=false"
