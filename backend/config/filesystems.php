@@ -61,6 +61,25 @@ return [
             'report' => false,
         ],
 
+        // Cloudflare R2 (S3-compatible) untuk berkas privat AKUR. Isi tetap dienkripsi APP_KEY sebelum diunggah
+        // (lihat App\Services\Files\PrivateFiles); R2_ROOT = folder per lingkungan, mis. akur-storage/dev-private.
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),
+            'root' => env('R2_ROOT', ''),
+            'use_path_style_endpoint' => true,
+            'visibility' => 'private',
+            // R2 belum mendukung semua checksum bawaan AWS SDK terbaru.
+            'request_checksum_calculation' => 'when_required',
+            'response_checksum_validation' => 'when_required',
+            'throw' => true,
+            'report' => false,
+        ],
+
     ],
 
     /*

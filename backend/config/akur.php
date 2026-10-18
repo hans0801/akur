@@ -50,6 +50,13 @@ return [
     'finance_write_roles' => [Role::SUPER_ADMIN, Role::BENDAHARA],
     'finance_read_roles' => [Role::SUPER_ADMIN, Role::KETUA_RW, Role::KETUA_RT, Role::BENDAHARA],
 
+    // Disk berkas privat: `local` (volume VPS) atau `r2` (Cloudflare R2). `fallback_disk` dibaca bila berkas belum
+    // ada di disk utama (masa pindah ke R2, sebelum `php artisan akur:files-migrate` selesai).
+    'files' => [
+        'disk' => env('AKUR_FILES_DISK', 'local'),
+        'fallback_disk' => env('AKUR_FILES_FALLBACK_DISK'),
+    ],
+
     // Unggahan privat (bukti bayar, nota kas): tipe diperiksa dari isi berkas, bukan nama/ekstensi.
     'uploads' => [
         'max_kb' => (int) env('AKUR_UPLOAD_MAX_KB', 5120),

@@ -16,7 +16,7 @@ class AttachmentPicker extends StatefulWidget {
   final String purpose;
   final String label;
 
-  /// false untuk tanda tangan/logo: berkas asli (PNG transparan) tidak diperkecil atau dikonversi ke JPEG.
+  /// false untuk tanda tangan/logo: PNG transparan tidak dikonversi ke JPEG (hanya dibatasi 1200 px).
   final bool resize;
   final ValueChanged<String?> onChanged;
 
@@ -30,9 +30,11 @@ class _AttachmentPickerState extends State<AttachmentPicker> {
 
   Future<void> _pick(ImageSource source) async {
     final messenger = ScaffoldMessenger.of(context);
+    // Foto bukti/nota: maks. 1600 px + JPEG 80. Tanda tangan/logo: maks. 1200 px tanpa imageQuality agar PNG
+    // transparan tetap PNG, cukup tajam untuk PDF surat dan jauh lebih ringan dari foto kamera asli.
     final picked = widget.resize
         ? await ImagePicker().pickImage(source: source, maxWidth: 1600, maxHeight: 1600, imageQuality: 80)
-        : await ImagePicker().pickImage(source: source);
+        : await ImagePicker().pickImage(source: source, maxWidth: 1200, maxHeight: 1200);
     if (picked == null) return;
 
     setState(() => _uploading = true);

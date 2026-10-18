@@ -8,6 +8,7 @@ use App\Models\FinanceTransaction;
 use App\Models\Payment;
 use App\Models\UnitLetterSetting;
 use App\Models\User;
+use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -17,14 +18,13 @@ use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 /**
- * Penyimpanan berkas privat (W8/W9). Isi dienkripsi dengan APP_KEY sebelum ditulis ke disk sehingga salinan
- * disk/volume VPS tidak membuka bukti bayar atau nota; checksum SHA-256 isi asli diverifikasi saat dibaca.
+ * Penyimpanan berkas privat (W8/W9). Isi dienkripsi dengan APP_KEY sebelum ditulis ke disk (volume VPS atau
+ * Cloudflare R2, lihat config akur.files) sehingga salinan penyimpanan tidak membuka bukti bayar, nota, atau
+ * surat ber-NIK; checksum SHA-256 isi asli diverifikasi saat dibaca.
  * Berkas diunggah dulu, lalu "diklaim" oleh pembayaran/transaksi kas milik pengunggah yang sama.
  */
 class PrivateFiles
 {
-    private const DISK = 'local';
-
     private const KEY_VERSION = 'app-key';
 
     public function store(UploadedFile $upload, User $owner, string $classification): FileObject
@@ -42,7 +42,7 @@ class PrivateFiles
     public function storeContent(string $content, string $mimeType, string $filename, string $classification, ?User $owner = null): FileObject
     {
         $key = $classification.'/'.now()->format('Y/m').'/'.Str::uuid();
-        Storage::disk(self::DISK)->put($key, Crypt::encryptString($content));
+        Storage::disk(config('akur.files.disk'))->put($key, Crypt::encryptString($content));
 
         $file = new FileObject([
             'owner_user_id' => $owner?->id,
@@ -62,10 +62,29 @@ class PrivateFiles
     /** Isi asli berkas; gagal bila berkas di disk berubah (checksum tidak cocok). */
     public function read(FileObject $file): string
     {
-        $stored = Storage::disk(self::DISK)->get($file->storage_key);
+        $stored = $this->readStored($file);
         if ($stored === null) {
             throw new RuntimeException('Berkas tidak ditemukan di penyimpanan.');
         }
+
+        return $this->decryptVerified($file, $stored);
+    }
+
+    /** Isi terenkripsi apa adanya: dari disk utama, lalu disk cadangan (masa pindah ke R2). */
+    public function readStored(FileObject $file): ?string
+    {
+        foreach ($this->disks() as $disk) {
+            if ($disk->exists($file->storage_key)) {
+                return $disk->get($file->storage_key);
+            }
+        }
+
+        return null;
+    }
+
+    /** Dekripsi isi tersimpan dan cocokkan dengan checksum SHA-256 isi asli. */
+    public function decryptVerified(FileObject $file, string $stored): string
+    {
         $content = Crypt::decryptString($stored);
 
         $expected = DB::table('file_objects')->where('id', $file->id)->selectRaw("encode(checksum_sha256, 'hex') AS h")->value('h');
@@ -103,7 +122,18 @@ class PrivateFiles
 
     public function delete(FileObject $file): void
     {
-        Storage::disk(self::DISK)->delete($file->storage_key);
+        foreach ($this->disks() as $disk) {
+            $disk->delete($file->storage_key);
+        }
         $file->forceDelete();
+    }
+
+    /** @return list<Filesystem> disk utama, lalu disk cadangan bila diatur. */
+    private function disks(): array
+    {
+        return array_map(
+            fn (string $name) => Storage::disk($name),
+            array_values(array_unique(array_filter([config('akur.files.disk'), config('akur.files.fallback_disk')]))),
+        );
     }
 }

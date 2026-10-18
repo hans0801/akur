@@ -59,8 +59,11 @@ Di Coolify → database Postgres Development:
 **Post-deployment Command** (jalan di dalam container setiap deploy; seeder ini idempotent):
 
 ```bash
-php artisan migrate --force && php artisan db:seed --force --class=RoleSeeder && php artisan db:seed --force --class=DocumentTypeSeeder
+php artisan migrate --force && php artisan db:seed --force --class=RoleSeeder && php artisan db:seed --force --class=DocumentTypeSeeder && (php artisan akur:files-migrate || true)
 ```
+
+`akur:files-migrate` menyalin berkas privat lama dari volume ke Cloudflare R2 (idempoten, diverifikasi checksum,
+volume tidak dihapus). Setelah semua berkas ada di R2, `AKUR_FILES_FALLBACK_DISK` dan volume boleh dilepas.
 
 **Scheduled Tasks** (pengganti service `scheduler`): name `laravel-scheduler`, command `php artisan schedule:run`, frequency `* * * * *`.
 
