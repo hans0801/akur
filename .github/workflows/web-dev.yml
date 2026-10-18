@@ -62,5 +62,12 @@ jobs:
           COOLIFY_WEB_UUID: ${{ vars.COOLIFY_WEB_UUID }}
         if: ${{ env.COOLIFY_TOKEN != '' && env.COOLIFY_WEB_UUID != '' }}
         run: |
-          curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
-            "https://console.rt05rw06larinda.my.id/api/v1/deploy?uuid=$COOLIFY_WEB_UUID&force=false"
+          code=$(curl -sS -o deploy.json -w '%{http_code}' -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            -H "Accept: application/json" \
+            "https://console.rt05rw06larinda.my.id/api/v1/deploy?uuid=$COOLIFY_WEB_UUID&force=false")
+          # Tampilkan status + awal respons (tanpa token) agar 403 Cloudflare vs Coolify bisa dibedakan.
+          if [ "$code" -ge 300 ]; then
+            echo "::error::Coolify deploy HTTP $code: $(head -c 300 deploy.json | tr '\n' ' ')"
+            exit 1
+          fi
+          cat deploy.json
