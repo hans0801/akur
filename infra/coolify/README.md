@@ -173,6 +173,19 @@ cd app && flutter run --dart-define=API_BASE_URL=https://api-dev.rt05rw06larinda
 Web lokal `http://localhost:5173` tidak bisa memakai cookie sesi API dev (cross-site + Secure); pakai API lokal untuk itu,
 atau perangkat Android/iOS (token Bearer).
 
+## 7. SSL: Cloudflare Origin Certificate (pengganti Let's Encrypt)
+
+Semua record DNS `*.rt05rw06larinda.my.id` harus **Proxied** (awan oranye): sertifikat di VPS hanya dipercaya Cloudflare.
+
+- Sertifikat: Cloudflare → SSL/TLS → Origin Server (RSA, `rt05rw06larinda.my.id` + `*.rt05rw06larinda.my.id`), berlaku s.d. **17 Okt 2029**.
+- Di VPS: `/data/coolify/proxy/certs/cf-origin.pem` + `cf-origin.key` (600), dimuat lewat
+  `/data/coolify/proxy/dynamic/cloudflare-origin.yaml` (file terpisah; `coolify.yaml` dibuat ulang oleh Coolify).
+- Sertifikat Let's Encrypt lama dihapus dari `acme.json` (cadangan di `/data/coolify/proxy/backups/acme.json.before-cf-origin.*`)
+  karena Traefik mendahulukan sertifikat yang namanya persis sama. Domain yang tercakup wildcard tidak diminta ulang ke Let's Encrypt.
+- Cloudflare: SSL/TLS mode **Full (strict)**, Always Use HTTPS, Minimum TLS 1.2.
+- Cek dari VPS: `echo | openssl s_client -connect 127.0.0.1:443 -servername dev.rt05rw06larinda.my.id 2>/dev/null | openssl x509 -noout -issuer -enddate`
+- Sebelum 2029: buat sertifikat baru, timpa kedua file, Traefik memuat ulang otomatis (file provider di-watch).
+
 ## Catatan
 
 - Memori: Coolify ±0,5–1 GB, dua Postgres, API (`memory_limit` PHP 192M). Muat di 4 GB; pantau di Coolify → Server → Metrics.
