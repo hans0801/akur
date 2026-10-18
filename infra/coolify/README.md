@@ -48,6 +48,7 @@ Di Coolify → database Postgres Development:
 | Ports Exposes | `8080` |
 | Domains | `https://api-dev.rt05rw06larinda.my.id` |
 | Health Check | aktif, path `/up`, port `8080` |
+| Watch Paths | `backend/**` (push yang hanya mengubah `app/`, `infra/`, dsb. tidak me-redeploy API) |
 
 **Environment Variables:** tempel isi [dev.env.example](dev.env.example) (Developer view), isi `APP_KEY`, kredensial DB dari langkah 2,
 `GOOGLE_CLIENT_IDS`, dan kedua kunci PII. Variabel cukup *runtime* (tidak perlu "Build Variable").
@@ -132,7 +133,7 @@ sesi `SameSite=Strict` tetap terkirim; origin web sudah ada di `AKUR_WEB_ORIGINS
 | Jenis | Nama | Nilai |
 |---|---|---|
 | Variable | `GOOGLE_WEB_CLIENT_ID` | web client ID OAuth (sama dengan `GOOGLE_CLIENT_IDS` di API) |
-| Variable | `COOLIFY_WEB_UUID` | `lqohrd5xchukmjtcodbhxv1k` (opsional, untuk auto-deploy) |
+| Variable | `COOLIFY_WEB_UUID` | `k3rfxtxusequ9e3mqillb8ez` (opsional, untuk auto-deploy) |
 | Secret | `COOLIFY_TOKEN` | token API Coolify dengan izin deploy (opsional) |
 
 Workflow jalan tiap push ke `main` yang mengubah `app/**` (atau manual: Actions → Web dev image → Run workflow),
@@ -142,7 +143,7 @@ Setelah image pertama ter-push: GitHub → profil → Packages → `akur-web` �
 Public** (isinya hanya JS/aset publik; client ID OAuth memang publik). Kalau ingin tetap private, jalankan
 `docker login ghcr.io` di VPS dengan PAT `read:packages`.
 
-**Coolify** (sudah dibuat: `akur-web-dev`, uuid `lqohrd5xchukmjtcodbhxv1k`):
+**Coolify** (sudah dibuat: `akur-web-dev`, uuid `k3rfxtxusequ9e3mqillb8ez`):
 
 | Pengaturan | Nilai |
 |---|---|
