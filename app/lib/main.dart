@@ -5,6 +5,7 @@ import 'api/api_client.dart';
 import 'auth/auth_controller.dart';
 import 'screens/home_screen.dart';
 import 'screens/login_screen.dart';
+import 'screens/maintenance_screen.dart';
 import 'screens/pending_screen.dart';
 import 'theme.dart';
 import 'widgets/async_view.dart';
@@ -38,6 +39,7 @@ class AkurApp extends StatelessWidget {
         builder: (context, _) => switch (auth.status) {
           AuthStatus.loading => const Scaffold(body: Center(child: CircularProgressIndicator(semanticsLabel: 'Memuat'))),
           AuthStatus.signedOut => LoginScreen(auth: auth),
+          AuthStatus.maintenance || AuthStatus.unavailable => MaintenanceScreen(auth: auth),
           AuthStatus.signedIn when auth.user!.isActive => HomeScreen(auth: auth),
           AuthStatus.signedIn => PendingScreen(auth: auth),
         },

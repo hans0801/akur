@@ -4,6 +4,7 @@ import '../auth/auth_controller.dart';
 import '../theme.dart';
 import '../widgets/akur_logo.dart';
 import '../widgets/akur_ui.dart';
+import 'home_screen.dart';
 
 /// FR-02: akun baru berstatus pending sampai pengurus menautkannya ke data warga.
 class PendingScreen extends StatelessWidget {
@@ -29,7 +30,10 @@ class PendingScreen extends StatelessWidget {
             ),
           ],
         ),
-        actions: [IconButton(onPressed: auth.signOut, icon: const Icon(Icons.logout), tooltip: 'Keluar')],
+        actions: [
+          IconButton(onPressed: () => openSettings(context, auth), icon: const Icon(Icons.settings_outlined), tooltip: 'Pengaturan aplikasi'),
+          IconButton(onPressed: auth.signOut, icon: const Icon(Icons.logout), tooltip: 'Keluar'),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(

@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnsureAccountActive;
+use App\Http\Middleware\EnsureNotInMaintenance;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\VerifyBrowserRequest;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -28,7 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(prepend: [AssignRequestId::class, SecurityHeaders::class], append: [VerifyBrowserRequest::class]);
 
-        $middleware->alias(['account.active' => EnsureAccountActive::class]);
+        $middleware->alias(['account.active' => EnsureAccountActive::class, 'not.maintenance' => EnsureNotInMaintenance::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

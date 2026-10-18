@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CurrentUserResource;
+use App\Models\AppSetting;
 use App\Models\UserSession;
 use App\Services\Audit\AuditLogger;
 use App\Services\Auth\SessionCookie;
@@ -18,9 +19,15 @@ class SessionController extends Controller
         private readonly AuditLogger $audit,
     ) {}
 
+    /** `meta.maintenance`: aplikasi menampilkan halaman pemeliharaan bagi selain super_admin. */
     public function me(Request $request): CurrentUserResource
     {
-        return new CurrentUserResource($request->user());
+        $maintenance = AppSetting::maintenance();
+
+        return (new CurrentUserResource($request->user()))->additional(['meta' => [
+            'maintenance' => $maintenance['enabled'],
+            'maintenance_message' => $maintenance['enabled'] ? $maintenance['message'] : null,
+        ]]);
     }
 
     public function logout(Request $request): JsonResponse

@@ -23,6 +23,7 @@ class CurrentUserResource extends JsonResource
             'display_name' => $this->display_name,
             'email' => $this->email,
             'avatar_url' => $this->avatar_url,
+            'avatar_choice' => $this->avatar_choice,
             'account_status' => $this->account_status,
             'memberships' => $this->membershipEntries(),
             'resident' => $this->resident ? [

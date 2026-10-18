@@ -40,6 +40,14 @@ class ApiClient {
   /// Dipanggil saat API membalas 401 di luar alur login (diatur oleh AuthController).
   VoidCallback? onUnauthorized;
 
+  /// Dipanggil saat server tak terjangkau, 5xx, atau mode pemeliharaan (`code: maintenance`),
+  /// agar AuthController bisa menampilkan halaman pemeliharaan (diatur oleh AuthController).
+  void Function(ApiException error)? onServerTrouble;
+
+  /// Galat yang menandakan server sedang tidak bisa dipakai (bukan galat validasi/izin biasa).
+  static bool isServerTrouble(ApiException e) =>
+      e.code == 'maintenance' || e.statusCode == 0 || e.statusCode == 502 || e.statusCode == 503 || e.statusCode == 504;
+
   final http.Client _client;
   final FlutterSecureStorage _storage;
 
@@ -108,6 +116,15 @@ class ApiClient {
 
     if (body != null) request.body = jsonEncode(body);
 
+    try {
+      return await _exchange(request, path);
+    } on ApiException catch (e) {
+      if (isServerTrouble(e) && !path.startsWith('/auth/')) onServerTrouble?.call(e);
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> _exchange(http.Request request, String path) async {
     final http.Response response;
     try {
       response = await http.Response.fromStream(await _client.send(request).timeout(timeout)).timeout(timeout);
@@ -121,6 +138,7 @@ class ApiClient {
     try {
       decoded = response.body.isEmpty ? <String, dynamic>{} : jsonDecode(response.body);
     } on FormatException {
+      // Mis. halaman HTML 502/503 dari proxy saat API mati.
       throw ApiException(response.statusCode, 'Respons server tidak valid (${response.statusCode}). Coba lagi nanti.');
     }
     final json = decoded is Map<String, dynamic> ? decoded : <String, dynamic>{'data': decoded};

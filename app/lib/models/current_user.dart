@@ -34,6 +34,7 @@ class CurrentUser {
     required this.displayName,
     required this.email,
     required this.avatarUrl,
+    this.avatarChoice,
     required this.accountStatus,
     required this.memberships,
     required this.residentName,
@@ -44,6 +45,7 @@ class CurrentUser {
     displayName: json['display_name'] as String,
     email: json['email'] as String?,
     avatarUrl: json['avatar_url'] as String?,
+    avatarChoice: json['avatar_choice'] as String?,
     accountStatus: json['account_status'] as String,
     memberships: (json['memberships'] as List<dynamic>).map((m) => Membership.fromJson(m as Map<String, dynamic>)).toList(),
     residentName: (json['resident'] as Map<String, dynamic>?)?['full_name'] as String?,
@@ -69,11 +71,17 @@ class CurrentUser {
   final String displayName;
   final String? email;
   final String? avatarUrl;
+
+  /// Avatar pilihan (`warga-1`..`warga-8`, `google`, `initials`); null = avatar bawaan.
+  final String? avatarChoice;
   final String accountStatus;
   final List<Membership> memberships;
   final String? residentName;
 
   bool get isActive => accountStatus == 'active';
+
+  /// Hanya untuk menampilkan menu (mis. mode pemeliharaan). Server tetap memeriksa peran.
+  bool get isSuperAdmin => isActive && memberships.any((m) => m.role == 'super_admin');
 
   /// Hanya untuk menampilkan menu. Otorisasi sebenarnya selalu di server.
   List<Membership> get linkingMemberships => memberships.where((m) => linkingRoles.contains(m.role)).toList();

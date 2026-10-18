@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\CurrentUserResource;
+use App\Models\AppSetting;
 use App\Models\AuthIdentity;
 use App\Models\User;
 use App\Services\Audit\AuditLogger;
@@ -98,9 +99,12 @@ class GoogleLoginController extends Controller
 
         $audit->log('auth.login', 'user_session', $session->id, actorUserId: $user->id, metadata: ['platform' => $data['platform']]);
 
+        $maintenance = AppSetting::maintenance();
         $body = [
             'user' => new CurrentUserResource($user),
             'session' => ['id' => $session->id, 'expires_at' => $session->expires_at->toIso8601String()],
+            'maintenance' => $maintenance['enabled'],
+            'maintenance_message' => $maintenance['enabled'] ? $maintenance['message'] : null,
         ];
 
         if ($data['platform'] !== 'web') {

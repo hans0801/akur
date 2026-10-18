@@ -31,6 +31,7 @@ class User extends Authenticatable
         'email',
         'email_verified_at',
         'avatar_url',
+        'avatar_choice',
         'phone',
         'account_status',
         'last_login_at',
@@ -66,6 +67,13 @@ class User extends Authenticatable
     public function resident(): HasOne
     {
         return $this->hasOne(Resident::class);
+    }
+
+    /** Akun aktif dengan keanggotaan super_admin yang berlaku (di unit mana pun). */
+    public function isSuperAdmin(): bool
+    {
+        return $this->account_status === self::STATUS_ACTIVE
+            && $this->memberships()->effective()->whereHas('role', fn ($q) => $q->where('code', Role::SUPER_ADMIN))->exists();
     }
 
     public function canSignIn(): bool

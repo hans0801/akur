@@ -2,13 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../auth/auth_controller.dart';
 import '../models/current_user.dart';
+import '../theme.dart';
 import '../widgets/akur_logo.dart';
 import '../widgets/akur_ui.dart';
+import '../widgets/avatars.dart';
 import 'beranda_screen.dart';
 import 'community/activities_screen.dart';
 import 'documents/document_requests_screen.dart';
 import 'finance/my_dues_screen.dart';
 import 'notifications_screen.dart';
+import 'settings_screen.dart';
 
 /// Kerangka utama setelah login: header AKUR (unit, notifikasi, profil) dan navigasi bawah
 /// Beranda · Iuran · Surat · Kegiatan. Menu pengurus ada di Beranda.
@@ -39,7 +42,13 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
     return Scaffold(
       appBar: AkurTopBar(user: user, auth: auth, bellKey: _notifications),
-      body: IndexedStack(index: _tab, children: tabs),
+      body: Column(
+        children: [
+          // Super admin tetap bisa memakai aplikasi saat pemeliharaan; ingatkan bahwa mode ini aktif.
+          if (auth.maintenanceActive) _MaintenanceStrip(onTap: () => openSettings(context, auth)),
+          Expanded(child: IndexedStack(index: _tab, children: tabs)),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: _go,
@@ -53,6 +62,43 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+class _MaintenanceStrip extends StatelessWidget {
+  const _MaintenanceStrip({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: AkurColors.tertiaryFixed,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              const Icon(Icons.construction_rounded, color: AkurColors.tertiary, size: 20),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Mode pemeliharaan aktif — pengguna lain melihat halaman pemeliharaan.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF6A3B00), fontWeight: FontWeight.w700),
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: AkurColors.tertiary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Membuka Pengaturan aplikasi (avatar, dan mode pemeliharaan untuk super admin).
+Future<void> openSettings(BuildContext context, AuthController auth) =>
+    Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => SettingsScreen(auth: auth)));
 
 /// Unit utama pengguna untuk header ("RT 005 / RW 006"): RT didahulukan oleh server.
 UnitRef? primaryUnitOf(CurrentUser user) => user.memberships.isEmpty ? null : user.memberships.first.unit;
@@ -119,7 +165,7 @@ class AkurTopBar extends StatelessWidget implements PreferredSizeWidget {
           padding: const EdgeInsets.only(right: 12, left: 4),
           child: Semantics(
             button: true,
-            label: 'Profil dan keluar',
+            label: 'Profil, pengaturan, dan keluar',
             child: InkWell(
               customBorder: const CircleBorder(),
               onTap: () => showProfileSheet(context, auth),
@@ -132,6 +178,7 @@ class AkurTopBar extends StatelessWidget implements PreferredSizeWidget {
   }
 }
 
+/// Avatar akun pengguna yang sedang login (ilustrasi pilihan, foto Google, atau inisial).
 class UserAvatar extends StatelessWidget {
   const UserAvatar({super.key, required this.user, this.size = 40});
 
@@ -139,34 +186,13 @@ class UserAvatar extends StatelessWidget {
   final double size;
 
   @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    final name = user.residentName ?? user.displayName;
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: scheme.primaryContainer,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: akurCardShadow,
-      ),
-      clipBehavior: Clip.antiAlias,
-      alignment: Alignment.center,
-      child: user.avatarUrl != null
-          ? Image.network(
-              user.avatarUrl!,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _initials(context, name),
-            )
-          : _initials(context, name),
-    );
-  }
-
-  Widget _initials(BuildContext context, String name) =>
-      Text(initialsOf(name), style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Theme.of(context).colorScheme.primary));
+  Widget build(BuildContext context) => AccountAvatar(
+    choice: user.avatarChoice,
+    seed: user.id,
+    name: user.residentName ?? user.displayName,
+    photoUrl: user.avatarUrl,
+    size: size,
+  );
 }
 
 /// Lembar profil: nama, email, peran per unit, dan tombol keluar.
@@ -213,6 +239,15 @@ Future<void> showProfileSheet(BuildContext context, AuthController auth) {
                 ],
               ),
               const SizedBox(height: 24),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openSettings(context, auth);
+                },
+                icon: const Icon(Icons.settings_outlined),
+                label: const Text('Pengaturan aplikasi'),
+              ),
+              const SizedBox(height: 10),
               OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(context);
