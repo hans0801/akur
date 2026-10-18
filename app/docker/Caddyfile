@@ -1,0 +1,27 @@
+# Penyaji statis Flutter web di dalam container. TLS & domain diurus Traefik (Coolify).
+{
+	admin off
+	auto_https off
+}
+
+:8080 {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+
+	respond /healthz 200
+
+	# Berkas entry selalu divalidasi ulang supaya versi baru langsung terpakai setelah deploy.
+	@entry path / /index.html /flutter_bootstrap.js /flutter_service_worker.js /version.json /manifest.json
+	header @entry Cache-Control "no-cache"
+
+	root * /srv/web
+	try_files {path} /index.html
+	file_server
+}

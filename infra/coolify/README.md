@@ -7,7 +7,7 @@ meneruskan trafik ke container API (port 8080). `compose.yaml` + Caddy tidak dip
 | Komponen | Nilai |
 |---|---|
 | API dev | `https://api-dev.rt05rw06larinda.my.id` (Laravel/FrankenPHP, port 8080, health `/up`) |
-| Web dev (nanti) | `https://dev.rt05rw06larinda.my.id` (Flutter web) |
+| Web dev | `https://dev.rt05rw06larinda.my.id` (Flutter web statis di Caddy, port 8080, health `/healthz`) |
 | Database | Postgres "Development" di Coolify, tanpa port publik |
 | Env | [dev.env.example](dev.env.example) |
 
@@ -18,7 +18,7 @@ Traefik bukan DNS server: record dibuat di pengelola DNS domain `rt05rw06larinda
 | Tipe | Nama | Nilai |
 |---|---|---|
 | A | `api-dev` | IP publik VPS |
-| A | `dev` | IP publik VPS (untuk Flutter web nanti) |
+| A | `dev` | IP publik VPS (Flutter web) |
 
 Kalau memakai Cloudflare, set **DNS only** (awan abu-abu) dulu supaya Let's Encrypt HTTP-01 lewat Traefik berhasil.
 Cek: `nslookup api-dev.rt05rw06larinda.my.id` harus mengembalikan IP VPS. Port 80 dan 443 harus terbuka di firewall VPS.
@@ -29,7 +29,9 @@ Di Coolify → database Postgres Development:
 
 1. Pastikan image **postgres:17** (sama dengan lokal; `pg_restore` butuh versi tujuan ≥ versi dump).
 2. **Make it publicly available: OFF.** API mengakses lewat jaringan Docker internal.
-3. Catat *Postgres URL (internal)*: `postgres://USER:PASSWORD@HOST:5432/DB`. `HOST` = nama container (UUID).
+3. Catat *Postgres URL (internal)*: `postgres://USER:PASSWORD@HOST:5432/DB`. `HOST` = UUID resource
+   (mis. `jameladalojjufonsboqrput`), **bukan** nama tampilan seperti `db-psql-d-akur` (tidak bisa di-resolve).
+   Bila SSL database aktif, isi `DB_SSLMODE=require`.
 4. Kalau database awalnya `postgres`, buat database `akur` dari menu Terminal container DB:
    `createdb -U <USER> akur`
 
@@ -113,15 +115,48 @@ curl -i https://api-dev.rt05rw06larinda.my.id/up
 
 Dari Terminal container API: `php artisan akur:security-check` dan `php artisan migrate:status`.
 
-## 6. Menghubungkan aplikasi Flutter
+## 6. Aplikasi Flutter web di Coolify
+
+Image dibangun dari [app/Dockerfile](../../app/Dockerfile): Flutter 3.47.2 (tarball resmi, dicek SHA-256) menjalankan
+`flutter build web --release`, lalu hasilnya disajikan Caddy ([app/docker/Caddyfile](../../app/docker/Caddyfile))
+dengan fallback SPA ke `index.html`. Web dan API beda subdomain pada *site* yang sama, jadi cookie sesi
+`SameSite=Strict` tetap terkirim; origin web sudah ada di `AKUR_WEB_ORIGINS` API.
+
+**+ New → Application** di project AKUR, environment development (sudah dibuat: `akur-web-dev`):
+
+| Pengaturan | Nilai |
+|---|---|
+| Source | Private repository (GitHub App) → `hans0801/akur`, branch `main` |
+| Build Pack | **Dockerfile** |
+| Base Directory | `/app` |
+| Dockerfile Location | `/Dockerfile` |
+| Ports Exposes | `8080` |
+| Domains | `https://dev.rt05rw06larinda.my.id` |
+| Health Check | aktif, path `/healthz`, port `8080` |
+
+**Environment Variables** — keduanya dicentang **Build Variable** (bukan runtime; nilainya dibakar ke JS saat build):
+
+```env
+API_BASE_URL=https://api-dev.rt05rw06larinda.my.id
+GOOGLE_WEB_CLIENT_ID=<web client ID, sama dengan GOOGLE_CLIENT_IDS di API>
+```
+
+Klik **Deploy**. Build pertama ±5–10 menit (unduh SDK Flutter); mengganti variabel di atas butuh redeploy.
+
+**Google Cloud Console** → Credentials → OAuth client (Web) → *Authorized JavaScript origins*: tambahkan
+`https://dev.rt05rw06larinda.my.id`. Tanpa ini tombol login Google menampilkan error `origin_mismatch`.
+
+Verifikasi: buka `https://dev.rt05rw06larinda.my.id`, login Google; di DevTools → Network, `POST /api/v1/auth/google`
+ke `api-dev` harus 200 dan mengembalikan cookie sesi.
+
+### Menjalankan Flutter lokal terhadap API dev
 
 ```bash
 cd app && flutter run --dart-define=API_BASE_URL=https://api-dev.rt05rw06larinda.my.id --dart-define=GOOGLE_WEB_CLIENT_ID=<web-client-id>
 ```
 
-Untuk Flutter web di `https://dev.rt05rw06larinda.my.id`, tambahkan origin itu ke *Authorized JavaScript origins*
-di Google Cloud Console (sudah ada di `AKUR_WEB_ORIGINS`). Web lokal `http://localhost:5173` tidak bisa memakai cookie
-sesi API dev (cross-site + Secure); pakai API lokal untuk itu.
+Web lokal `http://localhost:5173` tidak bisa memakai cookie sesi API dev (cross-site + Secure); pakai API lokal untuk itu,
+atau perangkat Android/iOS (token Bearer).
 
 ## Catatan
 
