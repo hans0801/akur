@@ -186,6 +186,33 @@ Semua record DNS `*.rt05rw06larinda.my.id` harus **Proxied** (awan oranye): sert
 - Cek dari VPS: `echo | openssl s_client -connect 127.0.0.1:443 -servername dev.rt05rw06larinda.my.id 2>/dev/null | openssl x509 -noout -issuer -enddate`
 - Sebelum 2029: buat sertifikat baru, timpa kedua file, Traefik memuat ulang otomatis (file provider di-watch).
 
+## 8. Pengamanan VPS (semua lewat Cloudflare)
+
+VPS berada di balik NAT provider (IP privat `10.10.1.87`); trafik HTTP tiba dengan alamat asal `10.10.x.x`, jadi firewall
+berbasis IP Cloudflare tidak bisa dipakai. Penggantinya:
+
+- **Authenticated Origin Pulls**: Cloudflare → SSL/TLS → Origin Server → Authenticated Origin Pulls = On. Traefik mewajibkan
+  sertifikat klien Cloudflare (`tls.options.default.clientAuth` di `dynamic/cloudflare-origin.yaml`, CA di
+  `certs/cf-origin-pull-ca.pem`). Akses langsung ke IP VPS ditolak saat handshake TLS.
+  Urutan wajib: nyalakan di Cloudflare dulu, baru Traefik; kebalikannya membuat semua situs error.
+- **SSH**: hanya key (`/etc/ssh/sshd_config.d/00-akur-hardening.conf`, dibaca sebelum `00-vpsmurah.conf`),
+  fail2ban `sshd` mode aggressive (`/etc/fail2ban/jail.d/akur-sshd.local`, journalmatch `ssh.service` untuk Ubuntu 24.04).
+- **SSH lewat Cloudflare Tunnel + Access**: tunnel `svr-p-main-01` (service `cloudflared` di VPS), route
+  `ssh.rt05rw06larinda.my.id` → `tcp://localhost:22`, aplikasi Access self-hosted dengan policy Allow email pemilik.
+  Klien: `cloudflared` + `~/.ssh/config`:
+  ```
+  Host akur-vps
+      HostName ssh.rt05rw06larinda.my.id
+      User root
+      ProxyCommand cloudflared access ssh --hostname %h
+  ```
+  Koneksi tunnel tiba dari `127.0.0.1` (dikecualikan fail2ban), jadi Access adalah pelindung utamanya.
+  Coolify memakai `host.docker.internal:22` (internal), tidak bergantung pada port forward publik.
+- **Cloudflare**: Security Level Medium, rate limiting `/api/v1/auth/` (20 req/10 s per IP), Bot Fight Mode **off**
+  (menantang GitHub Actions yang memanggil API Coolify). Jangan menyalakan Under Attack Mode untuk `api-dev`: aplikasi
+  mobile tidak bisa menyelesaikan challenge.
+- Jika tunnel mati dan port SSH publik sudah ditutup: masuk lewat konsol VNC panel provider.
+
 ## Catatan
 
 - Memori: Coolify ±0,5–1 GB, dua Postgres, API (`memory_limit` PHP 192M). Muat di 4 GB; pantau di Coolify → Server → Metrics.
